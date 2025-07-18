@@ -7,8 +7,9 @@ class CompPriceBot {
     constructor() {
         this.apiKey = localStorage.getItem('openai_api_key') || '';
         this.model = localStorage.getItem('openai_model') || 'gpt-4o';
-        this.storageType = localStorage.getItem('storage_type') || 'localStorage';
+        this.storageType = localStorage.getItem('storage_type') || 'database';
         this.localDirectory = localStorage.getItem('local_directory') || '';
+        this.isConfigured = this.checkInitialConfiguration();
         this.processedFiles = [];
         this.competitiveData = [];
         this.matches = [];
@@ -26,6 +27,11 @@ class CompPriceBot {
         this.setupEventListeners();
         this.loadStoredData();
         this.updateDashboard();
+        
+        // Show configuration if not set up
+        if (!this.isConfigured) {
+            setTimeout(() => this.showConfig(), 500);
+        }
     }
 
     setupEventListeners() {
@@ -43,6 +49,7 @@ class CompPriceBot {
         document.getElementById('configBtn').addEventListener('click', this.showConfig.bind(this));
         document.getElementById('saveConfig').addEventListener('click', this.saveConfig.bind(this));
         document.getElementById('cancelConfig').addEventListener('click', this.hideConfig.bind(this));
+        document.getElementById('browseDirectoryBtn').addEventListener('click', this.browseDirectory.bind(this));
     }
 
     handleDragOver(e) {
@@ -68,6 +75,13 @@ class CompPriceBot {
     }
 
     async processFiles(files) {
+        // Check if configured before processing
+        if (!this.isConfigured) {
+            this.showError('Please configure the application first. Click the Configure button.');
+            this.showConfig();
+            return;
+        }
+        
         console.log('Processing files:', files);
         
         for (const file of files) {
@@ -477,18 +491,27 @@ class CompPriceBot {
         const brands = [...new Set(this.competitiveData.map(d => d.brand).filter(Boolean))];
         document.getElementById('brandCount').textContent = brands.length;
 
-        // Show/hide sections based on data
+        // Show/hide sections based on configuration and data
         const emptyState = document.getElementById('emptyState');
         const uploadSection = document.getElementById('uploadSection');
         const dashboard = document.getElementById('dashboard');
         
-        if (this.competitiveData.length > 0) {
+        if (!this.isConfigured) {
+            emptyState.style.display = 'block';
+            uploadSection.style.display = 'none';
+            dashboard.style.display = 'none';
+            
+            // Update empty state for configuration
+            document.querySelector('.empty-icon i').className = 'fas fa-cog';
+            document.querySelector('.empty-title').textContent = 'Configuration Required';
+            document.querySelector('.empty-text').textContent = 'Please configure your local directory and settings to get started';
+        } else if (this.competitiveData.length > 0) {
             emptyState.style.display = 'none';
             uploadSection.style.display = 'none';
             dashboard.style.display = 'block';
             this.renderMatches();
         } else {
-            emptyState.style.display = 'block';
+            emptyState.style.display = 'none';
             uploadSection.style.display = 'block';
             dashboard.style.display = 'none';
         }
@@ -585,16 +608,24 @@ class CompPriceBot {
         this.storageType = document.getElementById('storageSelect').value;
         this.localDirectory = document.getElementById('directoryInput').value;
         
+        // Validate required fields
+        if (!this.localDirectory.trim()) {
+            this.showError('Local directory is required. Please select a directory.');
+            return;
+        }
+        
         localStorage.setItem('openai_api_key', this.apiKey);
         localStorage.setItem('openai_model', this.model);
         localStorage.setItem('storage_type', this.storageType);
         localStorage.setItem('local_directory', this.localDirectory);
         
+        this.isConfigured = true;
         this.configureStorage();
         this.setupLocalDirectoryMonitoring();
         
         this.hideConfig();
-        this.showSuccess('Configuration saved!');
+        this.showSuccess('Configuration saved! You can now upload files.');
+        this.updateDashboard();
     }
 
     saveData() {
@@ -605,7 +636,7 @@ class CompPriceBot {
             timestamp: new Date().toISOString()
         };
         
-        if (this.storageType === 'localStorage') {
+        if (this.storageType === 'database') {
             localStorage.setItem('comprice_data', JSON.stringify(data));
         } else if (this.storageType === 'csv') {
             this.autoExportCSV(data);
@@ -685,6 +716,32 @@ class CompPriceBot {
     showSuccess(message) {
         console.log(message);
         // Could implement toast notifications here
+    }
+
+    checkInitialConfiguration() {
+        const directory = localStorage.getItem('local_directory');
+        return directory && directory.trim() !== '';
+    }
+
+    async browseDirectory() {
+        try {
+            // Check if File System Access API is supported
+            if ('showDirectoryPicker' in window) {
+                const directoryHandle = await window.showDirectoryPicker({
+                    mode: 'read'
+                });
+                document.getElementById('directoryInput').value = directoryHandle.name;
+                console.log('Selected directory:', directoryHandle.name);
+            } else {
+                // Fallback for browsers that don't support File System Access API
+                this.showError('File system access not supported in this browser. Please type the directory path manually.');
+            }
+        } catch (error) {
+            if (error.name !== 'AbortError') {
+                console.error('Error selecting directory:', error);
+                this.showError('Error selecting directory. Please type the path manually.');
+            }
+        }
     }
 
     getConfidenceColor(score) {

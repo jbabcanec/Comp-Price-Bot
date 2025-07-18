@@ -625,10 +625,13 @@
             <!-- Empty State -->
             <div id="emptyState" class="empty-state">
                 <div class="empty-icon">
-                    <i class="fas fa-chart-line"></i>
+                    <i class="fas fa-cog"></i>
                 </div>
-                <div class="empty-title">Ready for Competitive Intelligence</div>
-                <div class="empty-text">Upload your competitive data files to start analyzing pricing and market insights</div>
+                <div class="empty-title">Configuration Required</div>
+                <div class="empty-text">Please configure your local directory and settings to get started</div>
+                <button onclick="compPriceBot.showConfig()" class="btn btn-primary" style="margin-top: 16px;">
+                    <i class="fas fa-cog"></i> Configure Now
+                </button>
             </div>
         </div>
     </div>
@@ -654,16 +657,21 @@
             <div class="form-group">
                 <label class="form-label">Storage Type</label>
                 <select id="storageSelect" class="form-select">
-                    <option value="localStorage">Browser Storage (Default)</option>
+                    <option value="database">Database (Default)</option>
                     <option value="csv">CSV File Export</option>
                     <option value="json">JSON File Export</option>
                 </select>
             </div>
             <div class="form-group">
-                <label class="form-label">Local Directory (Optional)</label>
-                <input type="text" id="directoryInput" class="form-input" placeholder="/path/to/competitive/data">
+                <label class="form-label">Local Directory (Required)</label>
+                <div style="display: flex; gap: 8px;">
+                    <input type="text" id="directoryInput" class="form-input" placeholder="/path/to/competitive/data" style="flex: 1;">
+                    <button type="button" id="browseDirectoryBtn" class="btn btn-secondary" style="padding: 12px 16px; white-space: nowrap;">
+                        <i class="fas fa-folder-open"></i> Browse
+                    </button>
+                </div>
                 <small style="color: #6b7280; font-size: 12px; margin-top: 4px; display: block;">
-                    Configure a local directory to monitor for competitive data files
+                    Select the directory containing your competitive data files
                 </small>
             </div>
             <div class="form-actions">
