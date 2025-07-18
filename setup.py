@@ -202,7 +202,7 @@ trap "kill $BACKEND_PID $FRONTEND_PID 2>/dev/null; exit" INT TERM
 wait $BACKEND_PID $FRONTEND_PID
 """
     
-    with open(unix_script, 'w') as f:
+    with open(unix_script, 'w', encoding='utf-8') as f:
         f.write(unix_content)
     
     # Make executable on Unix/Mac
@@ -247,7 +247,7 @@ echo Press any key to exit...
 pause >nul
 """
     
-    with open(windows_script, 'w') as f:
+    with open(windows_script, 'w', encoding='utf-8') as f:
         f.write(windows_content)
     
     print("✅ Created startup scripts: start.sh (Unix/Mac) and start.bat (Windows)")
@@ -279,7 +279,7 @@ except ImportError as e:
 """
     
     test_file = current_dir / "test_imports.py"
-    with open(test_file, "w") as f:
+    with open(test_file, "w", encoding='utf-8') as f:
         f.write(test_script)
     
     success = run_command(f'"{python_path}" "{test_file}"', "Testing imports")
