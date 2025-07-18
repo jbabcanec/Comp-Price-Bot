@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CompPrice Bot - Competitive Intelligence</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/antd/5.0.0/antd.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        .main-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+        .glass-morphism {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        .upload-area {
+            border: 2px dashed #ccc;
+            border-radius: 8px;
+            padding: 40px;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .upload-area:hover, .upload-area.dragover {
+            border-color: #1890ff;
+            background-color: rgba(24, 144, 255, 0.05);
+        }
+        .file-list {
+            margin-top: 20px;
+        }
+        .file-item {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            padding: 10px;
+            margin-bottom: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+        }
+        .processing-status {
+            margin-left: auto;
+            font-size: 12px;
+        }
+        .match-card {
+            background: white;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        .price-highlight {
+            font-size: 18px;
+            font-weight: bold;
+            color: #f5222d;
+        }
+        .config-panel {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        .stat-number {
+            font-size: 32px;
+            font-weight: bold;
+            color: #1890ff;
+        }
+        .stat-label {
+            color: #666;
+            margin-top: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <div class="header">
+            <h1><i class="fas fa-chart-line"></i> CompPrice Bot</h1>
+            <p>Competitive Intelligence & Price Analysis</p>
+        </div>
+
+        <!-- Configuration Panel -->
+        <div class="config-panel">
+            <button id="configBtn" style="background: rgba(255,255,255,0.2); border: none; color: white; padding: 8px 12px; border-radius: 8px; cursor: pointer;">
+                <i class="fas fa-cog"></i> Config
+            </button>
+        </div>
+
+        <!-- Main Content -->
+        <div class="glass-morphism" style="padding: 30px;">
+            <!-- File Upload Section -->
+            <div id="uploadSection">
+                <h2 style="color: white; margin-bottom: 20px;"><i class="fas fa-upload"></i> Upload Competitive Data</h2>
+                
+                <div class="upload-area" id="uploadArea">
+                    <i class="fas fa-cloud-upload-alt" style="font-size: 48px; color: #ccc; margin-bottom: 16px;"></i>
+                    <p style="margin: 0; color: #666;">
+                        Drag & drop files here or <strong>click to browse</strong><br>
+                        <small>Supports: CSV, Excel, PDF, Word, Images, JSON</small>
+                    </p>
+                    <input type="file" id="fileInput" multiple accept=".csv,.xlsx,.xls,.pdf,.docx,.doc,.txt,.json,.jpg,.jpeg,.png,.tiff" style="display: none;">
+                </div>
+
+                <div id="fileList" class="file-list"></div>
+            </div>
+
+            <!-- Analytics Dashboard -->
+            <div id="dashboard" style="display: none;">
+                <h2 style="color: white; margin-bottom: 20px;"><i class="fas fa-chart-bar"></i> Analytics Dashboard</h2>
+                
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-number" id="totalProducts">0</div>
+                        <div class="stat-label">Products Analyzed</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="totalMatches">0</div>
+                        <div class="stat-label">Competitive Matches</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="avgPrice">$0</div>
+                        <div class="stat-label">Average Price</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="brandCount">0</div>
+                        <div class="stat-label">Brands Found</div>
+                    </div>
+                </div>
+
+                <div id="matchesContainer"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Configuration Modal -->
+    <div id="configModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000;">
+        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 30px; border-radius: 12px; min-width: 400px;">
+            <h3>Configuration</h3>
+            <div style="margin-bottom: 16px;">
+                <label>OpenAI API Key:</label>
+                <input type="password" id="apiKeyInput" placeholder="sk-..." style="width: 100%; padding: 8px; margin-top: 4px; border: 1px solid #ddd; border-radius: 4px;">
+            </div>
+            <div style="margin-bottom: 16px;">
+                <label>Model:</label>
+                <select id="modelSelect" style="width: 100%; padding: 8px; margin-top: 4px; border: 1px solid #ddd; border-radius: 4px;">
+                    <option value="gpt-4o">GPT-4o</option>
+                    <option value="gpt-4o-mini">GPT-4o Mini</option>
+                </select>
+            </div>
+            <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                <button id="cancelConfig" style="padding: 8px 16px; border: 1px solid #ddd; background: white; border-radius: 4px; cursor: pointer;">Cancel</button>
+                <button id="saveConfig" style="padding: 8px 16px; border: none; background: #1890ff; color: white; border-radius: 4px; cursor: pointer;">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

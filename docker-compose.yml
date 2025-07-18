@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  comprice-bot:
+    build: .
+    container_name: comprice-bot-web
+    ports:
+      - "8080:8080"
+    volumes:
+      # Mount local data folder - users can customize this path
+      - ${DATA_PATH:-./local_data}:/app/data
+      # Persistent storage for database and vector store
+      - comprice_db:/app/database
+      - comprice_vectors:/app/vectors
+      # Config and logs
+      - comprice_config:/app/config
+      - comprice_logs:/app/logs
+    environment:
+      - ENVIRONMENT=production
+      - PORT=8080
+      - DATA_WATCH_ENABLED=true
+      - AUTO_PROCESS=true
+      - LOG_LEVEL=INFO
+    env_file:
+      - .env
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - comprice-network
+
+  # Optional: Redis for caching and job queues
+  redis:
+    image: redis:7-alpine
+    container_name: comprice-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - comprice_redis:/data
+    restart: unless-stopped
+    networks:
+      - comprice-network
+
+volumes:
+  comprice_db:
+  comprice_vectors:
+  comprice_config:
+  comprice_logs:
+  comprice_redis:
+
+networks:
+  comprice-network:
+    driver: bridge

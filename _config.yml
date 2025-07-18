@@ -1,0 +1,54 @@
+# GitHub Pages Configuration for CompPrice Bot
+title: CompPrice Bot
+description: Competitive Intelligence & Price Analysis Tool
+author: Joseph Babcanec
+email: joseph.babz@gmail.com
+
+# GitHub Pages settings
+plugins:
+  - jekyll-relative-links
+
+# Build settings
+markdown: kramdown
+highlighter: rouge
+
+# Collections and paths
+collections_dir: collections
+layouts_dir: _layouts
+includes_dir: _includes
+sass:
+  sass_dir: _sass
+
+# Exclude from processing
+exclude:
+  - backend/
+  - frontend/
+  - docker-compose.yml
+  - Dockerfile
+  - requirements.txt
+  - setup.py
+  - __pycache__/
+  - "*.pyc"
+  - .env*
+  - .git/
+  - .github/
+  - node_modules/
+  - vendor/
+
+# Include static files
+include:
+  - static/
+
+# Theme
+remote_theme: pages-themes/minimal@v0.2.0
+
+# Site settings
+url: https://jbabcanec.github.io
+baseurl: /Comp-Price-Bot
+
+# Navigation
+navigation:
+  - title: Home
+    url: /
+  - title: About
+    url: /about
