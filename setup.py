@@ -14,7 +14,15 @@ def run_command(cmd, description="", check=True):
     """Run a command with proper error handling"""
     print(f"🔧 {description}")
     try:
-        result = subprocess.run(cmd, shell=True, check=check, capture_output=True, text=True)
+        # Always run commands in the current working directory
+        result = subprocess.run(
+            cmd, 
+            shell=True, 
+            check=check, 
+            capture_output=True, 
+            text=True,
+            cwd=os.getcwd()  # Ensure we're in the right directory
+        )
         if result.stdout:
             print(result.stdout)
         return result.returncode == 0
@@ -48,41 +56,48 @@ def check_node_version():
 
 def setup_virtual_environment():
     """Create and setup virtual environment"""
-    venv_path = Path("venv")
+    current_dir = Path.cwd()
+    venv_path = current_dir / "venv"
     
     if venv_path.exists():
         print("✅ Virtual environment already exists")
         return True
     
     print("📦 Creating virtual environment...")
-    if not run_command(f"{sys.executable} -m venv venv", "Creating virtual environment"):
+    if not run_command(f'"{sys.executable}" -m venv venv', "Creating virtual environment"):
         return False
     
     return True
-
-def get_activation_command():
-    """Get the appropriate activation command for the current platform"""
-    if platform.system() == "Windows":
-        return "venv\\Scripts\\activate"
-    else:
-        return "source venv/bin/activate"
 
 def install_python_dependencies():
     """Install Python dependencies"""
     print("📥 Installing Python dependencies...")
     
-    # Get the correct pip path
+    current_dir = Path.cwd()
+    
+    # Get the correct pip path based on OS
     if platform.system() == "Windows":
-        pip_path = "venv\\Scripts\\pip"
+        pip_path = current_dir / "venv" / "Scripts" / "pip.exe"
     else:
-        pip_path = "venv/bin/pip"
+        pip_path = current_dir / "venv" / "bin" / "pip"
+    
+    # Make sure pip path exists
+    if not pip_path.exists():
+        print(f"❌ Pip not found at {pip_path}")
+        return False
     
     # Upgrade pip first
-    if not run_command(f"{pip_path} install --upgrade pip", "Upgrading pip"):
+    if not run_command(f'"{pip_path}" install --upgrade pip', "Upgrading pip"):
+        return False
+    
+    # Check if requirements.txt exists
+    requirements_path = current_dir / "requirements.txt"
+    if not requirements_path.exists():
+        print(f"❌ requirements.txt not found at {requirements_path}")
         return False
     
     # Install requirements
-    if not run_command(f"{pip_path} install -r requirements.txt", "Installing requirements"):
+    if not run_command(f'"{pip_path}" install -r "{requirements_path}"', "Installing requirements"):
         return False
     
     return True
@@ -91,14 +106,17 @@ def install_frontend_dependencies():
     """Install frontend dependencies"""
     print("📥 Installing frontend dependencies...")
     
-    frontend_path = Path("frontend")
+    current_dir = Path.cwd()
+    frontend_path = current_dir / "frontend"
+    
     if not frontend_path.exists():
-        print("❌ Frontend directory not found")
+        print(f"❌ Frontend directory not found at {frontend_path}")
         return False
     
+    # Change to frontend directory and install
     original_dir = os.getcwd()
     try:
-        os.chdir("frontend")
+        os.chdir(frontend_path)
         if not run_command("npm install", "Installing npm packages"):
             return False
         return True
@@ -107,8 +125,9 @@ def install_frontend_dependencies():
 
 def setup_environment_file():
     """Setup .env file if it doesn't exist"""
-    env_file = Path(".env")
-    env_example = Path(".env.example")
+    current_dir = Path.cwd()
+    env_file = current_dir / ".env"
+    env_example = current_dir / ".env.example"
     
     if not env_file.exists() and env_example.exists():
         print("📝 Creating .env file from template...")
@@ -124,10 +143,11 @@ def setup_environment_file():
 
 def create_directories():
     """Create necessary directories"""
+    current_dir = Path.cwd()
     directories = ["docs", "data", "chroma_db", "logs"]
     
     for dir_name in directories:
-        dir_path = Path(dir_name)
+        dir_path = current_dir / dir_name
         if not dir_path.exists():
             dir_path.mkdir(parents=True, exist_ok=True)
             print(f"📁 Created directory: {dir_name}")
@@ -138,9 +158,10 @@ def create_directories():
 
 def create_startup_scripts():
     """Create startup scripts for different platforms"""
+    current_dir = Path.cwd()
     
     # Create Unix/Mac startup script
-    unix_script = Path("start.sh")
+    unix_script = current_dir / "start.sh"
     unix_content = """#!/bin/bash
 echo "🚀 Starting CompPrice Bot..."
 
@@ -172,7 +193,7 @@ cd ..
 
 echo "✅ Services started!"
 echo "🌐 Frontend: http://localhost:3000"
-echo "🔧 Backend: http://localhost:5000"
+echo "🔧 Backend: http://localhost:5001"
 echo ""
 echo "Press Ctrl+C to stop all services..."
 
@@ -189,7 +210,7 @@ wait $BACKEND_PID $FRONTEND_PID
         os.chmod(unix_script, 0o755)
     
     # Create Windows startup script
-    windows_script = Path("start.bat")
+    windows_script = current_dir / "start.bat"
     windows_content = """@echo off
 echo 🚀 Starting CompPrice Bot...
 
@@ -220,7 +241,7 @@ cd ..
 
 echo ✅ Services started!
 echo 🌐 Frontend: http://localhost:3000
-echo 🔧 Backend: http://localhost:5000
+echo 🔧 Backend: http://localhost:5001
 echo.
 echo Press any key to exit...
 pause >nul
@@ -236,11 +257,13 @@ def test_installation():
     """Test if the installation was successful"""
     print("\n🧪 Testing installation...")
     
+    current_dir = Path.cwd()
+    
     # Get the correct python path
     if platform.system() == "Windows":
-        python_path = "venv\\Scripts\\python"
+        python_path = current_dir / "venv" / "Scripts" / "python.exe"
     else:
-        python_path = "venv/bin/python"
+        python_path = current_dir / "venv" / "bin" / "python"
     
     # Test imports
     test_script = """
@@ -255,13 +278,15 @@ except ImportError as e:
     exit(1)
 """
     
-    with open("test_imports.py", "w") as f:
+    test_file = current_dir / "test_imports.py"
+    with open(test_file, "w") as f:
         f.write(test_script)
     
-    success = run_command(f"{python_path} test_imports.py", "Testing imports")
+    success = run_command(f'"{python_path}" "{test_file}"', "Testing imports")
     
     # Clean up
-    os.remove("test_imports.py")
+    if test_file.exists():
+        test_file.unlink()
     
     return success
 
@@ -271,6 +296,7 @@ def main():
     print("=" * 50)
     print(f"Platform: {platform.system()} {platform.machine()}")
     print(f"Python: {sys.version}")
+    print(f"Working Directory: {os.getcwd()}")
     print("=" * 50)
     
     steps = [
