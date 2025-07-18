@@ -1,0 +1,33 @@
+# Core dependencies
+flask==3.0.0
+flask-cors==4.0.0
+python-dotenv==1.0.0
+
+# OpenAI and AI dependencies
+openai>=1.58.1
+chromadb==0.4.24
+
+# Database
+sqlalchemy==2.0.29
+flask-sqlalchemy==3.1.1
+alembic==1.13.1
+
+# File processing
+python-multipart==0.0.9
+python-magic==0.4.27
+pillow==10.3.0
+easyocr==1.7.0
+numpy==1.24.3
+pypdf==5.8.0
+python-docx==1.1.0
+beautifulsoup4==4.12.3
+mail-parser==4.1.4
+
+# Web scraping and search
+requests==2.31.0
+selenium==4.20.0
+googlesearch-python==1.2.3
+
+# Utils
+pandas==2.2.2
+python-dateutil==2.9.0

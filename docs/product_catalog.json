@@ -1,0 +1,54 @@
+{
+  "products": [
+    {
+      "id": "AC001",
+      "name": "CoolMax Pro 3-Ton AC",
+      "type": "air_conditioner",
+      "tonnage": 3,
+      "seer": 16,
+      "btu": 36000,
+      "features": [
+        "Variable Speed",
+        "Smart Thermostat Compatible",
+        "Energy Star"
+      ],
+      "model_number": "CMP-36K-16S",
+      "price_range": "$3000-4000",
+      "warranty": "10 years"
+    },
+    {
+      "id": "HP001",
+      "name": "HeatPump Elite 4-Ton",
+      "type": "heat_pump",
+      "tonnage": 4,
+      "seer": 18,
+      "hspf": 10,
+      "btu": 48000,
+      "features": [
+        "Dual Stage",
+        "Quiet Operation",
+        "Energy Star",
+        "Cold Climate"
+      ],
+      "model_number": "HPE-48K-18S",
+      "price_range": "$4500-6000",
+      "warranty": "12 years"
+    },
+    {
+      "id": "FU001",
+      "name": "FurnaceMax 80K BTU",
+      "type": "furnace",
+      "btu": 80000,
+      "afue": 95,
+      "stages": 2,
+      "features": [
+        "Modulating",
+        "Variable Speed Blower",
+        "WiFi Enabled"
+      ],
+      "model_number": "FMX-80K-95A",
+      "price_range": "$2500-3500",
+      "warranty": "15 years"
+    }
+  ]
+}
