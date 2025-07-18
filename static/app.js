@@ -414,9 +414,14 @@ class CompPriceBot {
         const fileItem = document.createElement('div');
         fileItem.className = 'file-item';
         fileItem.innerHTML = `
-            <div>
-                <i class="fas fa-file"></i> ${file.name} 
-                <small>(${this.formatFileSize(file.size)})</small>
+            <div class="file-info">
+                <div class="file-icon">
+                    <i class="fas fa-file-${this.getFileIcon(file.name)}"></i>
+                </div>
+                <div class="file-details">
+                    <h4>${file.name}</h4>
+                    <small>${this.formatFileSize(file.size)}</small>
+                </div>
             </div>
             <div class="processing-status">
                 <span class="status-text">Queued</span>
@@ -464,40 +469,47 @@ class CompPriceBot {
         const brands = [...new Set(this.competitiveData.map(d => d.brand).filter(Boolean))];
         document.getElementById('brandCount').textContent = brands.length;
 
-        // Show dashboard if we have data
+        // Show/hide sections based on data
+        const emptyState = document.getElementById('emptyState');
+        const uploadSection = document.getElementById('uploadSection');
+        const dashboard = document.getElementById('dashboard');
+        
         if (this.competitiveData.length > 0) {
-            document.getElementById('dashboard').style.display = 'block';
+            emptyState.style.display = 'none';
+            uploadSection.style.display = 'none';
+            dashboard.style.display = 'block';
             this.renderMatches();
+        } else {
+            emptyState.style.display = 'block';
+            uploadSection.style.display = 'block';
+            dashboard.style.display = 'none';
         }
     }
 
     renderMatches() {
         const container = document.getElementById('matchesContainer');
-        container.innerHTML = '<h3 style="color: white; margin-bottom: 16px;">Competitive Matches</h3>';
+        container.innerHTML = '<h3 class="section-title" style="margin-bottom: 24px;"><i class="fas fa-bullseye"></i> Competitive Matches</h3>';
         
         this.matches.slice(0, 10).forEach(match => {
             const matchCard = document.createElement('div');
             matchCard.className = 'match-card';
             matchCard.innerHTML = `
-                <div style="display: flex; justify-content: space-between; align-items: start;">
-                    <div style="flex: 1;">
-                        <h4 style="margin: 0 0 8px 0; color: #1890ff;">
-                            ${match.competitor_product.product_name || 'Unknown Product'}
-                        </h4>
-                        <p style="margin: 0; color: #666; font-size: 14px;">
-                            ${match.competitor_product.brand || 'Unknown Brand'} | 
+                <div class="match-header">
+                    <div>
+                        <div class="match-title">${match.competitor_product.product_name || 'Unknown Product'}</div>
+                        <div class="match-meta">
+                            ${match.competitor_product.brand || 'Unknown Brand'} • 
                             ${match.competitor_product.category || 'Unknown Category'}
-                        </p>
-                        <p style="margin: 8px 0 0 0; font-size: 14px;">
-                            ${match.insights}
-                        </p>
-                    </div>
-                    <div style="text-align: right;">
-                        <div class="price-highlight">$${match.competitor_product.price || '0'}</div>
-                        <div style="font-size: 12px; color: #666;">
-                            Match: ${(match.match_score * 100).toFixed(0)}%
                         </div>
                     </div>
+                    <div>
+                        <div class="price-highlight">$${match.competitor_product.price || '0'}</div>
+                        <div class="match-score">Match: ${(match.match_score * 100).toFixed(0)}%</div>
+                    </div>
+                </div>
+                <div class="match-insights">
+                    <i class="fas fa-lightbulb" style="margin-right: 8px; color: #6366f1;"></i>
+                    ${match.insights}
                 </div>
             `;
             container.appendChild(matchCard);
@@ -548,6 +560,25 @@ class CompPriceBot {
 
     getFileExtension(filename) {
         return filename.toLowerCase().substring(filename.lastIndexOf('.'));
+    }
+
+    getFileIcon(filename) {
+        const ext = this.getFileExtension(filename);
+        const iconMap = {
+            '.csv': 'csv',
+            '.xlsx': 'excel',
+            '.xls': 'excel',
+            '.pdf': 'pdf',
+            '.docx': 'word',
+            '.doc': 'word',
+            '.txt': 'alt',
+            '.json': 'code',
+            '.jpg': 'image',
+            '.jpeg': 'image',
+            '.png': 'image',
+            '.tiff': 'image'
+        };
+        return iconMap[ext] || 'alt';
     }
 
     formatFileSize(bytes) {
