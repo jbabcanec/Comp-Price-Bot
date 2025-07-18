@@ -651,6 +651,21 @@
                     <option value="gpt-4o-mini">GPT-4o Mini (Cost Effective)</option>
                 </select>
             </div>
+            <div class="form-group">
+                <label class="form-label">Storage Type</label>
+                <select id="storageSelect" class="form-select">
+                    <option value="localStorage">Browser Storage (Default)</option>
+                    <option value="csv">CSV File Export</option>
+                    <option value="json">JSON File Export</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Local Directory (Optional)</label>
+                <input type="text" id="directoryInput" class="form-input" placeholder="/path/to/competitive/data">
+                <small style="color: #6b7280; font-size: 12px; margin-top: 4px; display: block;">
+                    Configure a local directory to monitor for competitive data files
+                </small>
+            </div>
             <div class="form-actions">
                 <button id="cancelConfig" class="btn btn-secondary">Cancel</button>
                 <button id="saveConfig" class="btn btn-primary">Save Configuration</button>

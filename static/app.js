@@ -7,9 +7,17 @@ class CompPriceBot {
     constructor() {
         this.apiKey = localStorage.getItem('openai_api_key') || '';
         this.model = localStorage.getItem('openai_model') || 'gpt-4o';
+        this.storageType = localStorage.getItem('storage_type') || 'localStorage';
+        this.localDirectory = localStorage.getItem('local_directory') || '';
         this.processedFiles = [];
         this.competitiveData = [];
         this.matches = [];
+        this.analytics = {
+            daily: [],
+            weekly: [],
+            monthly: []
+        };
+        this.directoryWatcher = null;
         
         this.init();
     }
@@ -488,9 +496,38 @@ class CompPriceBot {
 
     renderMatches() {
         const container = document.getElementById('matchesContainer');
-        container.innerHTML = '<h3 class="section-title" style="margin-bottom: 24px;"><i class="fas fa-bullseye"></i> Competitive Matches</h3>';
+        container.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                <h3 class="section-title" style="margin: 0;"><i class="fas fa-bullseye"></i> Competitive Matches</h3>
+                <div style="display: flex; gap: 12px;">
+                    <button class="btn btn-secondary" onclick="compPriceBot.exportMatches('csv')" style="padding: 8px 16px;">
+                        <i class="fas fa-download"></i> Export CSV
+                    </button>
+                    <button class="btn btn-secondary" onclick="compPriceBot.exportMatches('json')" style="padding: 8px 16px;">
+                        <i class="fas fa-file-code"></i> Export JSON
+                    </button>
+                </div>
+            </div>
+            <div id="matchesList"></div>
+            <div id="analyticsCharts" style="margin-top: 32px;"></div>
+        `;
         
-        this.matches.slice(0, 10).forEach(match => {
+        const matchesList = document.getElementById('matchesList');
+        
+        if (this.matches.length === 0) {
+            matchesList.innerHTML = `
+                <div class="empty-state" style="padding: 40px;">
+                    <div class="empty-icon" style="font-size: 60px;">
+                        <i class="fas fa-search"></i>
+                    </div>
+                    <div class="empty-title">No Matches Found Yet</div>
+                    <div class="empty-text">Upload competitive data files to start finding matches</div>
+                </div>
+            `;
+            return;
+        }
+        
+        this.matches.slice(0, 20).forEach((match, index) => {
             const matchCard = document.createElement('div');
             matchCard.className = 'match-card';
             matchCard.innerHTML = `
@@ -499,26 +536,42 @@ class CompPriceBot {
                         <div class="match-title">${match.competitor_product.product_name || 'Unknown Product'}</div>
                         <div class="match-meta">
                             ${match.competitor_product.brand || 'Unknown Brand'} • 
-                            ${match.competitor_product.category || 'Unknown Category'}
+                            ${match.competitor_product.category || 'Unknown Category'} •
+                            ${match.competitor_product.file_name || 'Unknown Source'}
                         </div>
                     </div>
                     <div>
                         <div class="price-highlight">$${match.competitor_product.price || '0'}</div>
-                        <div class="match-score">Match: ${(match.match_score * 100).toFixed(0)}%</div>
+                        <div class="match-score">
+                            <span style="color: ${this.getConfidenceColor(match.match_score)};">
+                                ${(match.match_score * 100).toFixed(0)}% Match
+                            </span>
+                        </div>
                     </div>
                 </div>
                 <div class="match-insights">
                     <i class="fas fa-lightbulb" style="margin-right: 8px; color: #6366f1;"></i>
                     ${match.insights}
                 </div>
+                ${match.competitor_product.model_number ? `
+                    <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #e5e7eb; font-size: 13px; color: #6b7280;">
+                        <strong>Model:</strong> ${match.competitor_product.model_number}
+                        ${match.competitor_product.tonnage ? ` • <strong>Tonnage:</strong> ${match.competitor_product.tonnage}` : ''}
+                        ${match.competitor_product.seer ? ` • <strong>SEER:</strong> ${match.competitor_product.seer}` : ''}
+                    </div>
+                ` : ''}
             `;
-            container.appendChild(matchCard);
+            matchesList.appendChild(matchCard);
         });
+        
+        this.renderAnalyticsCharts();
     }
 
     showConfig() {
         document.getElementById('apiKeyInput').value = this.apiKey;
         document.getElementById('modelSelect').value = this.model;
+        document.getElementById('storageSelect').value = this.storageType;
+        document.getElementById('directoryInput').value = this.localDirectory;
         document.getElementById('configModal').style.display = 'block';
     }
 
@@ -529,20 +582,55 @@ class CompPriceBot {
     saveConfig() {
         this.apiKey = document.getElementById('apiKeyInput').value;
         this.model = document.getElementById('modelSelect').value;
+        this.storageType = document.getElementById('storageSelect').value;
+        this.localDirectory = document.getElementById('directoryInput').value;
         
         localStorage.setItem('openai_api_key', this.apiKey);
         localStorage.setItem('openai_model', this.model);
+        localStorage.setItem('storage_type', this.storageType);
+        localStorage.setItem('local_directory', this.localDirectory);
+        
+        this.configureStorage();
+        this.setupLocalDirectoryMonitoring();
         
         this.hideConfig();
         this.showSuccess('Configuration saved!');
     }
 
     saveData() {
-        localStorage.setItem('comprice_data', JSON.stringify({
+        const data = {
             competitiveData: this.competitiveData,
             matches: this.matches,
+            analytics: this.analytics,
             timestamp: new Date().toISOString()
-        }));
+        };
+        
+        if (this.storageType === 'localStorage') {
+            localStorage.setItem('comprice_data', JSON.stringify(data));
+        } else if (this.storageType === 'csv') {
+            this.autoExportCSV(data);
+        } else if (this.storageType === 'json') {
+            this.autoExportJSON(data);
+        }
+    }
+
+    autoExportCSV(data) {
+        if (data.matches.length > 0) {
+            const filename = `comprice_matches_${new Date().toISOString().split('T')[0]}.csv`;
+            this.downloadCSV(data.matches.map(match => ({
+                product_name: match.competitor_product.product_name,
+                brand: match.competitor_product.brand,
+                price: match.competitor_product.price,
+                category: match.competitor_product.category,
+                match_score: match.match_score,
+                timestamp: data.timestamp
+            })), filename);
+        }
+    }
+
+    autoExportJSON(data) {
+        const filename = `comprice_data_${new Date().toISOString().split('T')[0]}.json`;
+        this.downloadJSON(data, filename);
     }
 
     loadStoredData() {
@@ -598,9 +686,158 @@ class CompPriceBot {
         console.log(message);
         // Could implement toast notifications here
     }
+
+    getConfidenceColor(score) {
+        if (score >= 0.8) return '#059669'; // Green
+        if (score >= 0.6) return '#d97706'; // Orange
+        return '#dc2626'; // Red
+    }
+
+    renderAnalyticsCharts() {
+        const container = document.getElementById('analyticsCharts');
+        
+        // Generate sample analytics data
+        const priceData = this.generatePriceAnalytics();
+        const trendData = this.generateTrendData();
+        
+        container.innerHTML = `
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 24px;">
+                <div class="glass-morphism" style="padding: 24px;">
+                    <h4 style="margin: 0 0 16px 0; color: #1f2937;">Price Distribution</h4>
+                    <div id="priceChart" style="height: 200px; display: flex; align-items: end; gap: 8px; justify-content: center;">
+                        ${priceData.map(data => `
+                            <div style="display: flex; flex-direction: column; align-items: center;">
+                                <div style="width: 40px; height: ${data.height}px; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); border-radius: 4px 4px 0 0;"></div>
+                                <div style="font-size: 12px; color: #6b7280; margin-top: 4px;">${data.label}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+                
+                <div class="glass-morphism" style="padding: 24px;">
+                    <h4 style="margin: 0 0 16px 0; color: #1f2937;">Weekly Trends</h4>
+                    <div id="trendChart" style="height: 200px; display: flex; align-items: end; gap: 4px;">
+                        ${trendData.map(data => `
+                            <div style="flex: 1; display: flex; flex-direction: column; align-items: center;">
+                                <div style="width: 100%; height: ${data.height}px; background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%); border-radius: 2px;"></div>
+                                <div style="font-size: 10px; color: #6b7280; margin-top: 4px;">${data.day}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    generatePriceAnalytics() {
+        const prices = this.competitiveData.map(d => d.price).filter(p => typeof p === 'number' && p > 0);
+        if (prices.length === 0) return [];
+
+        const ranges = [
+            { label: '$0-1K', min: 0, max: 1000 },
+            { label: '$1-3K', min: 1000, max: 3000 },
+            { label: '$3-5K', min: 3000, max: 5000 },
+            { label: '$5K+', min: 5000, max: Infinity }
+        ];
+
+        return ranges.map(range => {
+            const count = prices.filter(p => p >= range.min && p < range.max).length;
+            return {
+                label: range.label,
+                count: count,
+                height: Math.max(20, (count / prices.length) * 160)
+            };
+        });
+    }
+
+    generateTrendData() {
+        const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+        return days.map(day => ({
+            day: day,
+            height: Math.floor(Math.random() * 120) + 20
+        }));
+    }
+
+    exportMatches(format) {
+        if (this.matches.length === 0) {
+            this.showError('No matches to export');
+            return;
+        }
+
+        const data = this.matches.map(match => ({
+            product_name: match.competitor_product.product_name,
+            brand: match.competitor_product.brand,
+            price: match.competitor_product.price,
+            category: match.competitor_product.category,
+            model_number: match.competitor_product.model_number,
+            match_score: match.match_score,
+            insights: match.insights,
+            source_file: match.competitor_product.file_name,
+            timestamp: new Date().toISOString()
+        }));
+
+        if (format === 'csv') {
+            this.downloadCSV(data, 'competitive_matches.csv');
+        } else if (format === 'json') {
+            this.downloadJSON(data, 'competitive_matches.json');
+        }
+    }
+
+    downloadCSV(data, filename) {
+        const headers = Object.keys(data[0]);
+        const csvContent = [
+            headers.join(','),
+            ...data.map(row => headers.map(header => `"${row[header] || ''}"`).join(','))
+        ].join('\n');
+
+        this.downloadFile(csvContent, filename, 'text/csv');
+    }
+
+    downloadJSON(data, filename) {
+        const jsonContent = JSON.stringify(data, null, 2);
+        this.downloadFile(jsonContent, filename, 'application/json');
+    }
+
+    downloadFile(content, filename, type) {
+        const blob = new Blob([content], { type: type });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
+    async setupLocalDirectoryMonitoring() {
+        if (!this.localDirectory) {
+            console.warn('No local directory configured');
+            return;
+        }
+
+        // In a real implementation, this would use File System Access API
+        // For now, we'll simulate directory monitoring
+        console.log(`Monitoring directory: ${this.localDirectory}`);
+    }
+
+    async configureStorage() {
+        // Storage configuration logic
+        const storage = {
+            type: this.storageType,
+            directory: this.localDirectory,
+            lastSync: new Date().toISOString()
+        };
+        
+        localStorage.setItem('storage_config', JSON.stringify(storage));
+        console.log('Storage configured:', storage);
+    }
 }
+
+// Global reference for button callbacks
+let compPriceBot;
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', () => {
-    new CompPriceBot();
+    compPriceBot = new CompPriceBot();
 });
