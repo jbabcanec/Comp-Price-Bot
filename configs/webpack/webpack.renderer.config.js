@@ -1,8 +1,11 @@
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 
+// Get root directory (go up two levels from configs/webpack/)
+const rootDir = path.resolve(__dirname, '../..');
+
 module.exports = {
-  entry: './src/renderer/index.tsx',
+  entry: path.resolve(rootDir, 'src/renderer/index.tsx'),
   target: 'electron-renderer',
   module: {
     rules: [
@@ -11,7 +14,7 @@ module.exports = {
         use: {
           loader: 'ts-loader',
           options: {
-            configFile: 'tsconfig.renderer.json',
+            configFile: path.resolve(rootDir, 'tsconfig.renderer.json'),
           },
         },
         exclude: /node_modules/,
@@ -25,25 +28,25 @@ module.exports = {
   resolve: {
     extensions: ['.tsx', '.ts', '.js'],
     alias: {
-      '@': path.resolve(__dirname, 'src'),
-      '@shared': path.resolve(__dirname, 'src/shared'),
-      '@renderer': path.resolve(__dirname, 'src/renderer'),
+      '@': path.resolve(rootDir, 'src'),
+      '@shared': path.resolve(rootDir, 'src/shared'),
+      '@renderer': path.resolve(rootDir, 'src/renderer'),
     },
   },
   output: {
     filename: 'bundle.js',
-    path: path.resolve(__dirname, 'dist/renderer'),
+    path: path.resolve(rootDir, 'dist/renderer'),
     clean: true,
   },
   plugins: [
     new HtmlWebpackPlugin({
-      template: './src/renderer/index.html',
+      template: path.resolve(rootDir, 'src/renderer/index.html'),
       filename: 'index.html',
     }),
   ],
   devServer: {
     static: {
-      directory: path.join(__dirname, 'dist/renderer'),
+      directory: path.resolve(rootDir, 'dist/renderer'),
     },
     compress: true,
     port: 3000,

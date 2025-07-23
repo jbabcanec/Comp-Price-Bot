@@ -77,14 +77,24 @@ export class ProductsRepository {
         params.push(filters.type);
       }
       
-      if (filters.tonnage) {
-        sql += ' AND tonnage = ?';
-        params.push(filters.tonnage);
+      if (filters.tonnageMin) {
+        sql += ' AND tonnage >= ?';
+        params.push(filters.tonnageMin);
       }
       
-      if (filters.seer) {
+      if (filters.tonnageMax) {
+        sql += ' AND tonnage <= ?';
+        params.push(filters.tonnageMax);
+      }
+      
+      if (filters.seerMin) {
         sql += ' AND seer >= ?';
-        params.push(filters.seer);
+        params.push(filters.seerMin);
+      }
+      
+      if (filters.seerMax) {
+        sql += ' AND seer <= ?';
+        params.push(filters.seerMax);
       }
       
       if (filters.search) {
@@ -210,14 +220,24 @@ export class ProductsRepository {
         params.push(filters.type);
       }
       
-      if (filters.tonnage) {
-        sql += ' AND tonnage = ?';
-        params.push(filters.tonnage);
+      if (filters.tonnageMin) {
+        sql += ' AND tonnage >= ?';
+        params.push(filters.tonnageMin);
       }
       
-      if (filters.seer) {
+      if (filters.tonnageMax) {
+        sql += ' AND tonnage <= ?';
+        params.push(filters.tonnageMax);
+      }
+      
+      if (filters.seerMin) {
         sql += ' AND seer >= ?';
-        params.push(filters.seer);
+        params.push(filters.seerMin);
+      }
+      
+      if (filters.seerMax) {
+        sql += ' AND seer <= ?';
+        params.push(filters.seerMax);
       }
       
       if (filters.search) {

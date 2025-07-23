@@ -1,0 +1,5 @@
+SKU,Brand,Model,Type,Price,SEER,Tonnage
+LEN-XR16-024,Lennox,XR16-024,Air Conditioner,2850.00,16,2.0
+TRN-XL18-036,Trane,XL18i-036,Heat Pump,3450.00,18,3.0
+CAR-24ABC-048,Carrier,24ABC6-048,Condenser,4200.00,15,4.0
+GDM-GSX16-030,Goodman,GSX160301,Air Conditioner,2200.00,16,2.5

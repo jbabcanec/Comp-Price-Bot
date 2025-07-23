@@ -1,0 +1,25 @@
+HVAC EQUIPMENT PRICE LIST - WINTER 2025
+
+Model: XR16-024-230
+Brand: Lennox
+Type: Air Conditioner
+Tonnage: 2.0 Tons
+SEER: 16
+Price: $2,850.00
+Description: High efficiency air conditioner with variable speed technology
+
+Model: XL18i-036-230
+Brand: Trane
+Type: Heat Pump  
+Tonnage: 3.0 Tons
+SEER: 18
+Price: $3,450.00
+Description: Variable speed heat pump with ComfortR technology
+
+Model: 24ABC6-048-230
+Brand: Carrier
+Type: Condenser
+Tonnage: 4.0 Tons
+SEER: 15
+Price: $4,200.00
+Description: Standard efficiency outdoor condensing unit

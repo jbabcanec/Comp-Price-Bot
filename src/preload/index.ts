@@ -15,6 +15,10 @@ export interface ElectronAPI {
     select: (options: FileSelectOptions) => Promise<IpcResponse<string | null>>;
     read: (filePath: string) => Promise<IpcResponse<string>>;
     write: (filePath: string, content: string) => Promise<IpcResponse<boolean>>;
+    process: (filePath: string) => Promise<IpcResponse<any>>;
+    scanDirectory: (directoryPath: string) => Promise<IpcResponse<any[]>>;
+    processBatch: (filePaths: string[]) => Promise<IpcResponse<any[]>>;
+    validateProducts: (extractedData: any[]) => Promise<IpcResponse<any>>;
   };
 
   // Database operations - Products
@@ -68,6 +72,10 @@ const electronAPI: ElectronAPI = {
     select: (options: FileSelectOptions) => ipcRenderer.invoke('file:select', options),
     read: (filePath: string) => ipcRenderer.invoke('file:read', filePath),
     write: (filePath: string, content: string) => ipcRenderer.invoke('file:write', filePath, content),
+    process: (filePath: string) => ipcRenderer.invoke('file:process', filePath),
+    scanDirectory: (directoryPath: string) => ipcRenderer.invoke('file:scanDirectory', directoryPath),
+    processBatch: (filePaths: string[]) => ipcRenderer.invoke('file:processBatch', filePaths),
+    validateProducts: (extractedData: any[]) => ipcRenderer.invoke('file:validateProducts', extractedData),
   },
 
   // Database operations

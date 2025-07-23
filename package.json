@@ -7,15 +7,18 @@
   "scripts": {
     "dev": "concurrently \"npm run dev:renderer\" \"npm run dev:main\"",
     "dev:main": "tsc -p src/main --watch",
-    "dev:renderer": "webpack serve --config webpack.renderer.config.js --mode development",
+    "dev:renderer": "webpack serve --config configs/webpack/webpack.renderer.config.js --mode development",
     "build": "npm run build:main && npm run build:renderer",
     "build:main": "tsc -p src/main",
-    "build:renderer": "webpack --config webpack.renderer.config.js --mode production",
+    "build:renderer": "webpack --config configs/webpack/webpack.renderer.config.js --mode production",
     "electron": "electron .",
     "start": "npm run build && electron .",
-    "test": "jest",
-    "lint": "eslint src --ext .ts,.tsx",
-    "typecheck": "tsc --noEmit"
+    "test": "jest --config configs/jest/jest.config.js",
+    "test:watch": "jest --config configs/jest/jest.config.js --watch",
+    "test:coverage": "jest --config configs/jest/jest.config.js --coverage",
+    "lint": "eslint src tests --ext .ts,.tsx",
+    "typecheck": "tsc --noEmit",
+    "demo:openai": "ts-node examples/openai-demo.ts"
   },
   "keywords": [
     "hvac",
@@ -32,8 +35,11 @@
     "@testing-library/react": "^13.4.0",
     "@testing-library/user-event": "^14.6.1",
     "@types/jest": "^29.5.14",
+    "@types/papaparse": "^5.3.16",
+    "@types/pdf-parse": "^1.1.5",
     "@types/react": "^18.3.23",
     "@types/react-dom": "^18.3.7",
+    "@types/yauzl": "^2.10.3",
     "@typescript-eslint/eslint-plugin": "^6.21.0",
     "@typescript-eslint/parser": "^6.21.0",
     "concurrently": "^9.2.0",
@@ -45,6 +51,7 @@
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^4.6.2",
     "html-webpack-plugin": "^5.6.3",
+    "identity-obj-proxy": "^3.0.0",
     "jest": "^29.7.0",
     "jest-environment-jsdom": "^29.7.0",
     "prettier": "^3.6.2",
@@ -53,6 +60,7 @@
     "style-loader": "^3.3.4",
     "ts-jest": "^29.4.0",
     "ts-loader": "^9.5.2",
+    "ts-node": "^10.9.2",
     "typescript": "^5.8.3",
     "wait-on": "^8.0.3",
     "webpack": "^5.100.2",
@@ -61,6 +69,15 @@
   },
   "dependencies": {
     "electron-store": "^8.2.0",
-    "sqlite3": "^5.1.7"
+    "eml-parser": "^2.0.4",
+    "mammoth": "^1.9.1",
+    "node-html-parser": "^7.0.1",
+    "node-stream-zip": "^1.15.0",
+    "papaparse": "^5.5.3",
+    "pdf-parse": "^1.1.1",
+    "sqlite3": "^5.1.7",
+    "tesseract.js": "^6.0.1",
+    "xlsx": "^0.18.5",
+    "yauzl": "^3.2.0"
   }
 }

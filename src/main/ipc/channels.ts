@@ -11,6 +11,10 @@ export const IPC_CHANNELS = {
   FILE_SELECT: 'file:select',
   FILE_READ: 'file:read',
   FILE_WRITE: 'file:write',
+  FILE_PROCESS: 'file:process',
+  FILE_SCAN_DIRECTORY: 'file:scanDirectory',
+  FILE_PROCESS_BATCH: 'file:processBatch',
+  FILE_SAVE_TEMP: 'file:saveTemp',
   
   // Database operations - Products
   DB_PRODUCTS_CREATE: 'db:products:create',
