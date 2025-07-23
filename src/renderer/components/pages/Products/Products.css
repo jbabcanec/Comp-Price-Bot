@@ -102,6 +102,18 @@
   align-items: center;
 }
 
+.btn-primary svg {
+  stroke: white;
+}
+
+.btn-success svg {
+  stroke: white;
+}
+
+.btn-danger svg {
+  stroke: white;
+}
+
 .products-content {
   flex: 1;
   display: flex;
@@ -621,6 +633,56 @@
   color: #6b7280;
   line-height: 1.5;
   margin: 0;
+}
+
+/* Upload area styles (similar to Upload page) */
+.upload-area {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(203, 213, 225, 0.5);
+  padding: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 20px;
+}
+
+.drop-zone {
+  text-align: center;
+  padding: 60px 40px;
+  border: 2px dashed #cbd5e1;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+  width: 100%;
+  max-width: 500px;
+  transition: all 0.3s ease;
+}
+
+.drop-zone:hover {
+  border-color: #3b82f6;
+  background: linear-gradient(135deg, #eff6ff, #dbeafe);
+}
+
+.drop-zone-icon {
+  margin-bottom: 24px;
+  color: #9ca3af;
+  display: flex;
+  justify-content: center;
+}
+
+.drop-zone h3 {
+  font-size: 1.5rem;
+  color: #1e293b;
+  margin-bottom: 12px;
+  font-weight: 600;
+}
+
+.drop-zone p {
+  font-size: 1rem;
+  color: #64748b;
+  margin-bottom: 32px;
+  line-height: 1.5;
 }
 
 /* Responsive adjustments */

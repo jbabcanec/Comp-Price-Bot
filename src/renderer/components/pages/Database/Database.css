@@ -41,6 +41,7 @@
 .toolbar-right {
   display: flex;
   align-items: center;
+  gap: 16px;
 }
 
 .record-count {
@@ -269,6 +270,14 @@
 .btn-icon {
   display: flex;
   align-items: center;
+}
+
+.btn-danger svg {
+  stroke: white;
+}
+
+.btn-primary svg {
+  stroke: white;
 }
 
 /* Responsive design */

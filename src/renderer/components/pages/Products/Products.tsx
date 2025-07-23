@@ -212,16 +212,42 @@ export const Products: React.FC = () => {
   const getFileIcon = (extension: string) => {
     switch (extension) {
       case '.csv':
-        return '📊';
+        return (
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <path d="M3 3v18h18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M8 12l4-4 4 4 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        );
       case '.xlsx':
       case '.xls':
-        return '📈';
+        return (
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <polyline points="14,2 14,8 20,8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <line x1="16" y1="13" x2="8" y2="21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <line x1="8" y1="13" x2="16" y2="21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        );
       case '.json':
-        return '📋';
+        return (
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <polyline points="14,2 14,8 20,8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <line x1="12" y1="18" x2="12" y2="12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <line x1="9" y1="15" x2="15" y2="15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        );
       case '.txt':
-        return '📄';
       default:
-        return '📄';
+        return (
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <polyline points="14,2 14,8 20,8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <line x1="16" y1="13" x2="8" y2="13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <line x1="16" y1="17" x2="8" y2="17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <polyline points="10,9 9,9 8,9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        );
     }
   };
 
@@ -299,75 +325,68 @@ export const Products: React.FC = () => {
         </button>
       </div>
 
-      <div className="page-actions">
-        <button className="btn btn-primary" onClick={handleSelectDirectory} disabled={loading}>
-          <div className="btn-icon">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-              <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
+      {viewMode === 'import' && !selectedDirectory && (
+        <div className="upload-area">
+          <div className="drop-zone">
+            <div className="drop-zone-icon">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
+                <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+            <h3>Select Your Product Directory</h3>
+            <p>Choose a directory containing your HVAC product files (CSV, Excel, JSON, TXT)</p>
+            <button className="btn btn-primary" onClick={handleSelectDirectory} disabled={loading}>
+              <div className="btn-icon">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                  <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </div>
+              {loading ? 'Loading...' : 'Choose Directory'}
+            </button>
           </div>
-          {loading ? 'Loading...' : 'Select Directory'}
-        </button>
-        
-        {selectedDirectory && (
-          <>
-            <button className="btn btn-secondary" onClick={handleRefresh} disabled={loading}>
-              <div className="btn-icon">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                  <path d="M1 4v6h6M23 20v-6h-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </div>
-              Refresh Files
-            </button>
-            
-            <button className="btn btn-secondary" onClick={handleSelectAll} disabled={loading || supportedCount === 0}>
-              <div className="btn-icon">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                  <path d="M20 6L9 17l-5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </div>
-              Select All ({supportedCount})
-            </button>
+        </div>
+      )}
 
-            <button 
-              className="btn btn-success" 
-              onClick={handleProcessSelected} 
-              disabled={loading || processing || selectedCount === 0}
-            >
-              <div className="btn-icon">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                  <path d="M5 12l5 5L20 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </div>
-              {processing ? 'Processing...' : `Process Selected (${selectedCount})`}
-            </button>
-          </>
-        )}
-      </div>
+      {viewMode === 'import' && selectedDirectory && (
+        <div className="page-actions">
+          <button className="btn btn-secondary" onClick={handleRefresh} disabled={loading}>
+            <div className="btn-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <path d="M1 4v6h6M23 20v-6h-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 073.51 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+            Refresh Files
+          </button>
+          
+          <button className="btn btn-secondary" onClick={handleSelectAll} disabled={loading || supportedCount === 0}>
+            <div className="btn-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <path d="M20 6L9 17l-5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+            Select All ({supportedCount})
+          </button>
+
+          <button 
+            className="btn btn-success" 
+            onClick={handleProcessSelected} 
+            disabled={loading || processing || selectedCount === 0}
+          >
+            <div className="btn-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <path d="M5 12l5 5L20 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+            {processing ? 'Processing...' : `Process Selected (${selectedCount})`}
+          </button>
+        </div>
+      )}
 
       <div className="products-content">
         {viewMode === 'import' ? (
           // Import Mode
-          !selectedDirectory ? (
-            <div className="empty-state">
-              <div className="empty-state-icon">
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
-                  <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </div>
-              <h3>Import Your Product Catalog</h3>
-              <p>Select a directory containing your HVAC product files (CSV, Excel, JSON, TXT). Files will be processed and validated before importing into your catalog.</p>
-              <button className="btn btn-primary large" onClick={handleSelectDirectory}>
-                <div className="btn-icon">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                    <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                </div>
-                Select Directory to Import
-              </button>
-            </div>
-          ) : (
+          selectedDirectory ? (
             <div className="files-section">
               <div className="directory-info">
                 <h3>Import Directory</h3>
@@ -446,7 +465,7 @@ export const Products: React.FC = () => {
                 </div>
               )}
             </div>
-          )
+          ) : null
         ) : (
           // Table Mode
           <div className="products-table-section">

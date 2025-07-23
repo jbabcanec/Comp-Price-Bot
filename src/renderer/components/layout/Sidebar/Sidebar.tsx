@@ -39,7 +39,6 @@ const sidebarItems: SidebarItem[] = [
   { id: 'dashboard', label: 'Dashboard', icon: 'chart' },
   { id: 'products', label: 'Our Files', icon: 'folder' },
   { id: 'upload', label: 'Competitor Data', icon: 'upload' },
-  { id: 'crosswalk', label: 'Crosswalk', icon: 'shuffle', badge: 3 },
   { id: 'database', label: 'SKU Database', icon: 'database' },
   { id: 'history', label: 'History', icon: 'clock' },
   { id: 'settings', label: 'Settings', icon: 'settings' },

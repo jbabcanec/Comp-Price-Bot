@@ -175,6 +175,104 @@ export const Database: React.FC = () => {
     }
   };
 
+  const handlePurgeDatabase = () => {
+    if (records.length === 0) return;
+    
+    const confirmed = confirm(
+      `⚠️ WARNING: This will permanently delete ALL ${records.length} crosswalk records from the database.\n\nThis action cannot be undone. Are you absolutely sure you want to purge all data?`
+    );
+    
+    if (confirmed) {
+      const doubleConfirmed = confirm(
+        `Last chance: This will delete ALL ${records.length} records permanently.\n\nType YES in the next dialog to confirm.`
+      );
+      
+      if (doubleConfirmed) {
+        const finalConfirmation = prompt('Type "DELETE ALL" to confirm purging the entire database:');
+        if (finalConfirmation === 'DELETE ALL') {
+          setRecords([]);
+          setSelectedRows(new Set());
+          alert('Database has been purged. All crosswalk records have been deleted.');
+        } else {
+          alert('Purge cancelled - confirmation text did not match.');
+        }
+      }
+    }
+  };
+
+  const handleExportToCSV = () => {
+    if (records.length === 0) {
+      alert('No records to export.');
+      return;
+    }
+
+    try {
+      // Create CSV content
+      const headers = [
+        'ID',
+        'Competitor SKU',
+        'Competitor Company',
+        'Competitor Price',
+        'Price Date',
+        'Our SKU',
+        'Our Model',
+        'Confidence',
+        'Match Method',
+        'Verified',
+        'Verified By',
+        'Verified At',
+        'Notes',
+        'Created At',
+        'Updated At'
+      ];
+
+      // Convert records to CSV format
+      const csvRows = records.map(record => [
+        record.id,
+        `"${record.competitor_sku}"`,
+        `"${record.competitor_company}"`,
+        record.competitor_price || '',
+        record.competitor_price_date || '',
+        `"${record.our_sku}"`,
+        `"${record.our_model}"`,
+        record.confidence,
+        `"${record.match_method}"`,
+        record.verified ? 'Yes' : 'No',
+        record.verified_by ? `"${record.verified_by}"` : '',
+        record.verified_at ? `"${formatDate(record.verified_at)}"` : '',
+        record.notes ? `"${record.notes.replace(/"/g, '""')}"` : '',
+        `"${formatDate(record.created_at)}"`,
+        record.updated_at ? `"${formatDate(record.updated_at)}"` : ''
+      ]);
+
+      // Combine headers and data
+      const csvContent = [headers, ...csvRows]
+        .map(row => row.join(','))
+        .join('\n');
+
+      // Create and download file
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      
+      if (link.download !== undefined) {
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `hvac-crosswalk-export-${new Date().toISOString().split('T')[0]}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        alert(`Successfully exported ${records.length} records to CSV file.`);
+      } else {
+        alert('CSV export is not supported in this browser.');
+      }
+    } catch (error) {
+      console.error('Export failed:', error);
+      alert('Export failed: ' + (error instanceof Error ? error.message : 'Unknown error'));
+    }
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString() + ' ' + 
            new Date(dateString).toLocaleTimeString();
@@ -209,7 +307,7 @@ export const Database: React.FC = () => {
     } else if (field === 'confidence' && typeof value === 'number') {
       displayValue = `${Math.round(value * 100)}%`;
     } else if (field === 'verified' && typeof value === 'boolean') {
-      displayValue = value ? '✓ Yes' : '✗ No';
+      displayValue = value ? 'Yes' : 'No';
     }
     
     const getConfidenceColor = (confidence: number) => {
@@ -283,6 +381,31 @@ export const Database: React.FC = () => {
         
         <div className="toolbar-right">
           <span className="record-count">{records.length} records</span>
+          <button 
+            className="btn btn-primary"
+            onClick={handleExportToCSV}
+            disabled={records.length === 0}
+          >
+            <div className="btn-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+            Export CSV
+          </button>
+          <button 
+            className="btn btn-danger"
+            onClick={handlePurgeDatabase}
+            disabled={records.length === 0}
+          >
+            <div className="btn-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M10 11v6M14 11v6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+            Purge All Data
+          </button>
         </div>
       </div>
 

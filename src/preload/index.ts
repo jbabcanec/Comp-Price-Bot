@@ -50,6 +50,18 @@ export interface ElectronAPI {
     reset: () => Promise<IpcResponse<boolean>>;
   };
 
+  // API Key operations
+  apiKey: {
+    storeOpenAI: (apiKey: string) => Promise<IpcResponse<boolean>>;
+    getOpenAI: () => Promise<IpcResponse<string | null>>;
+    hasOpenAI: () => Promise<boolean>;
+    getMetadata: () => Promise<{ hasKey: boolean; timestamp?: string; masked?: string }>;
+    removeOpenAI: () => Promise<IpcResponse<boolean>>;
+    validateOpenAI: (apiKey?: string) => Promise<{ valid: boolean; error?: string }>;
+    getUsage: () => Promise<IpcResponse<{ requests: number; tokens: number; lastReset: string } | null>>;
+    isSecureStorageAvailable: () => Promise<boolean>;
+  };
+
   // Application operations
   app: {
     getVersion: () => Promise<IpcResponse<string>>;
@@ -105,6 +117,18 @@ const electronAPI: ElectronAPI = {
     set: (key: string, value: any) => ipcRenderer.invoke('settings:set', key, value),
     getAll: () => ipcRenderer.invoke('settings:getAll'),
     reset: () => ipcRenderer.invoke('settings:reset'),
+  },
+
+  // API Key operations
+  apiKey: {
+    storeOpenAI: (apiKey: string) => ipcRenderer.invoke('api-key:store-openai', apiKey),
+    getOpenAI: () => ipcRenderer.invoke('api-key:get-openai'),
+    hasOpenAI: () => ipcRenderer.invoke('api-key:has-openai'),
+    getMetadata: () => ipcRenderer.invoke('api-key:get-metadata'),
+    removeOpenAI: () => ipcRenderer.invoke('api-key:remove-openai'),
+    validateOpenAI: (apiKey?: string) => ipcRenderer.invoke('api-key:validate-openai', apiKey),
+    getUsage: () => ipcRenderer.invoke('api-key:get-usage'),
+    isSecureStorageAvailable: () => ipcRenderer.invoke('api-key:secure-storage-available'),
   },
 
   // Application operations

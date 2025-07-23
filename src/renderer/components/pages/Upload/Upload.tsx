@@ -364,6 +364,9 @@ export const Upload: React.FC = () => {
                             </div>
                           )}
                         </div>
+                        <button className="btn btn-primary btn-sm">
+                          Start Crosswalk Matching
+                        </button>
                       </div>
                     )}
                     

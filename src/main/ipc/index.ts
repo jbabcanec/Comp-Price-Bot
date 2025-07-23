@@ -2,6 +2,7 @@ import { registerDatabaseHandlers } from './handlers/database.handler';
 import { registerFileHandlers } from './handlers/file.handler';
 import { registerSettingsHandlers } from './handlers/settings.handler';
 import { registerApplicationHandlers } from './handlers/application.handler';
+import { setupApiKeyHandlers } from './handlers/apiKey.handler';
 
 /**
  * Register all IPC handlers for the application
@@ -15,6 +16,7 @@ export function registerAllIpcHandlers(): void {
   registerFileHandlers();
   registerSettingsHandlers();
   registerApplicationHandlers();
+  setupApiKeyHandlers();
   
   console.log('All IPC handlers registered successfully');
 }

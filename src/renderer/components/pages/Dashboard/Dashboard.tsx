@@ -39,44 +39,6 @@ export const Dashboard: React.FC = () => {
           </div>
         </div>
 
-        <div className="dashboard-card recent-activity">
-          <div className="card-header">
-            <h3>Development Progress</h3>
-            <div className="card-icon">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </div>
-          </div>
-          <div className="activity-list">
-            <div className="activity-item completed">
-              <div className="activity-icon">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                  <path d="M20 6L9 17l-5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </div>
-              <span className="activity-text">Core Infrastructure Complete</span>
-            </div>
-            <div className="activity-item completed">
-              <div className="activity-icon">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                  <path d="M20 6L9 17l-5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </div>
-              <span className="activity-text">UI Layout & Navigation Ready</span>
-            </div>
-            <div className="activity-item pending">
-              <div className="activity-icon">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
-                  <path d="M12 6v6l4 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </div>
-              <span className="activity-text">Ready for Phase 2: Product Management</span>
-            </div>
-          </div>
-        </div>
-
         <div className="dashboard-card quick-actions">
           <div className="card-header">
             <h3>Quick Actions</h3>
@@ -107,10 +69,11 @@ export const Dashboard: React.FC = () => {
             <button className="action-button">
               <div className="action-icon">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                  <path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2"/>
+                  <path d="M12 1v6m0 6v6m11-7h-6m-6 0H1" stroke="currentColor" strokeWidth="2"/>
                 </svg>
               </div>
-              <span className="action-text">View Crosswalk</span>
+              <span className="action-text">View Reports</span>
             </button>
             <button className="action-button">
               <div className="action-icon">

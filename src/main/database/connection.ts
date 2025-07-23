@@ -7,16 +7,57 @@ export class DatabaseConnection {
   private db: sqlite3.Database | null = null;
   private dbPath: string;
 
-  constructor() {
-    // Store database in user data directory
-    const userDataPath = app.getPath('userData');
-    this.dbPath = path.join(userDataPath, 'hvac-crosswalk.db');
-    
-    // Ensure the directory exists
+  constructor(customPath?: string) {
+    this.dbPath = this.determineDatabasePath(customPath);
+    this.ensureDirectoryExists();
+  }
+
+  /**
+   * Determine the database path (custom or default)
+   */
+  private determineDatabasePath(customPath?: string): string {
+    if (customPath && customPath.trim()) {
+      // Use custom path
+      return path.join(customPath, 'hvac-crosswalk.db');
+    } else {
+      // Default: user data directory
+      const userDataPath = app.getPath('userData');
+      return path.join(userDataPath, 'hvac-crosswalk.db');
+    }
+  }
+
+  /**
+   * Ensure the database directory exists
+   */
+  private ensureDirectoryExists(): void {
     const dbDir = path.dirname(this.dbPath);
     if (!fs.existsSync(dbDir)) {
       fs.mkdirSync(dbDir, { recursive: true });
     }
+  }
+
+  /**
+   * Update the database location (requires reconnection)
+   */
+  async setDatabasePath(customPath?: string): Promise<void> {
+    // Close existing connection
+    if (this.db) {
+      await this.close();
+    }
+
+    // Update path and ensure directory exists
+    this.dbPath = this.determineDatabasePath(customPath);
+    this.ensureDirectoryExists();
+
+    // Reconnect if we were previously connected
+    await this.connect();
+  }
+
+  /**
+   * Get current database path
+   */
+  getDatabasePath(): string {
+    return this.dbPath;
   }
 
   /**

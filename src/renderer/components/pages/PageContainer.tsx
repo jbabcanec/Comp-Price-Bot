@@ -2,12 +2,11 @@ import React from 'react';
 import { Dashboard } from './Dashboard';
 import { Products } from './Products';
 import { Upload } from './Upload';
-import { Crosswalk } from './Crosswalk';
 import { Database } from './Database';
 import { History } from './History';
 import { Settings } from './Settings';
 
-export type PageId = 'dashboard' | 'products' | 'upload' | 'crosswalk' | 'database' | 'history' | 'settings';
+export type PageId = 'dashboard' | 'products' | 'upload' | 'database' | 'history' | 'settings';
 
 interface PageContainerProps {
   currentPage: PageId;
@@ -22,8 +21,6 @@ export const PageContainer: React.FC<PageContainerProps> = ({ currentPage }) => 
         return <Products />;
       case 'upload':
         return <Upload />;
-      case 'crosswalk':
-        return <Crosswalk />;
       case 'database':
         return <Database />;
       case 'history':

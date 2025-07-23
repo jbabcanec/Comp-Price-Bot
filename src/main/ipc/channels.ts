@@ -39,6 +39,16 @@ export const IPC_CHANNELS = {
   SETTINGS_GET_ALL: 'settings:getAll',
   SETTINGS_RESET: 'settings:reset',
   
+  // API Key operations
+  API_KEY_STORE_OPENAI: 'api-key:store-openai',
+  API_KEY_GET_OPENAI: 'api-key:get-openai',
+  API_KEY_HAS_OPENAI: 'api-key:has-openai',
+  API_KEY_GET_METADATA: 'api-key:get-metadata',
+  API_KEY_REMOVE_OPENAI: 'api-key:remove-openai',
+  API_KEY_VALIDATE_OPENAI: 'api-key:validate-openai',
+  API_KEY_GET_USAGE: 'api-key:get-usage',
+  API_KEY_SECURE_STORAGE_AVAILABLE: 'api-key:secure-storage-available',
+  
   // Application operations
   APP_GET_VERSION: 'app:getVersion',
   APP_GET_PATH: 'app:getPath',

@@ -185,6 +185,10 @@
   justify-content: center;
 }
 
+.action-button.primary svg {
+  stroke: white;
+}
+
 .action-text {
   font-size: 0.875rem;
   font-weight: 500;

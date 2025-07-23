@@ -1,6 +1,7 @@
 import { ipcMain } from 'electron';
 import Store from 'electron-store';
 import { IPC_CHANNELS } from '../channels';
+import { DatabaseConnection } from '../../database/connection';
 
 // Initialize electron-store for settings
 const store = new Store({
@@ -10,6 +11,7 @@ const store = new Store({
     defaultCompany: '',
     autoProcessing: false,
     matchThreshold: 0.8,
+    databaseLocation: '',
     theme: 'light'
   }
 });
@@ -36,6 +38,16 @@ export function registerSettingsHandlers(): void {
   ipcMain.handle(IPC_CHANNELS.SETTINGS_SET, async (_, key: string, value: any) => {
     try {
       store.set(key, value);
+      
+      // Handle database location change
+      if (key === 'databaseLocation') {
+        // Note: In a real implementation, you'd need to get the database instance
+        // and call setDatabasePath(value). For now, we'll just store the setting.
+        // The actual database location change would happen on next app restart
+        // or when the database service is reinitialized.
+        console.log('Database location updated to:', value || '[Default]');
+      }
+      
       return { success: true, data: true };
     } catch (error) {
       console.error('IPC Error - Settings Set:', error);
