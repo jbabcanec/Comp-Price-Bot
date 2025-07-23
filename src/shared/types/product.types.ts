@@ -105,3 +105,54 @@ export interface ProductCreateInput {
 export interface ProductUpdateInput extends Partial<ProductCreateInput> {
   id: number;
 }
+
+/**
+ * Enhanced ExtractedData interface for email processing
+ */
+export interface ExtractedData {
+  sku: string;
+  company: string;
+  price?: number;
+  model?: string;
+  description?: string;
+  source?: string;
+  confidence?: number;
+  rawData?: string;
+  extractionMethod?: string;
+  processingNotes?: string;
+  // HVAC-specific fields
+  tonnage?: number;
+  seer?: number;
+  seer2?: number;
+  afue?: number;
+  hspf?: number;
+  refrigerant?: string;
+  stage?: StageType;
+  type?: ProductType;
+  // Email processing specific
+  sources?: string[];
+  correlationData?: {
+    supportingEvidence: number;
+    correlationNotes?: string;
+    multiSourceConfidence: boolean;
+    orphaned?: boolean;
+  };
+}
+
+/**
+ * Email processing result summary
+ */
+export interface EmailProcessingSummary {
+  fileName: string;
+  processingTime: number;
+  totalItemsExtracted: number;
+  uniqueItemsAfterDeduplication: number;
+  averageConfidence: number;
+  sourceBreakdown: {
+    textOnly: number;
+    imageOnly: number;
+    attachmentOnly: number;
+    multipleSources: number;
+  };
+  processingMethod: string;
+}

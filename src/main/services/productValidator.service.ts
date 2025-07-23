@@ -1,4 +1,4 @@
-import { ExtractedData } from './fileProcessor.service';
+import { ExtractedData } from '@shared/types/product.types';
 import { UniversalSpecDetector, UniversalProductData, UniversalSpec } from '@shared/utils/universalSpecDetector';
 
 /**

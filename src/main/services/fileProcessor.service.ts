@@ -12,20 +12,8 @@ import { parseMsg, parseEml } from 'eml-parser';
 import * as StreamZip from 'node-stream-zip';
 import { OpenAIProductExtractor, OpenAIProductSchema } from '@shared/services/openai-extractor';
 import { UniversalSpecDetector } from '@shared/utils/universalSpecDetector';
-
-/**
- * Extracted data structure from any file type
- */
-export interface ExtractedData {
-  sku: string;
-  company: string;
-  price?: number;
-  description?: string;
-  model?: string;
-  type?: string;
-  source?: string;
-  confidence?: number;
-}
+import { UnifiedEmailProcessor, UnifiedEmailProcessingResult } from './unifiedEmailProcessor.service';
+import { ExtractedData, EmailProcessingSummary, ProductType } from '@shared/types/product.types';
 
 /**
  * File processing result with metadata
@@ -50,9 +38,11 @@ export class FileProcessorService {
   private ocrWorker: any;
   private openaiExtractor?: OpenAIProductExtractor;
   private useOpenAI: boolean = false;
+  private unifiedEmailProcessor: UnifiedEmailProcessor;
   
   constructor(openaiApiKey?: string) {
     this.initializeOCR();
+    this.unifiedEmailProcessor = new UnifiedEmailProcessor();
     if (openaiApiKey) {
       this.openaiExtractor = new OpenAIProductExtractor(openaiApiKey);
       this.useOpenAI = true;
@@ -70,6 +60,34 @@ export class FileProcessorService {
     } catch (error: any) {
       console.warn('OCR initialization failed, image processing will be limited:', error);
     }
+  }
+
+  /**
+   * Process email files with detailed results (MSG/EML only)
+   */
+  async processEmailWithDetails(filePath: string): Promise<UnifiedEmailProcessingResult> {
+    const fileExtension = path.extname(filePath).toLowerCase();
+    
+    if (fileExtension !== '.msg' && fileExtension !== '.eml') {
+      throw new Error(`Email processing only supports .msg and .eml files, got: ${fileExtension}`);
+    }
+    
+    return await this.unifiedEmailProcessor.processEmail(filePath);
+  }
+
+  /**
+   * Get email processing summary
+   */
+  getEmailProcessingSummary(result: UnifiedEmailProcessingResult): EmailProcessingSummary {
+    return {
+      fileName: path.basename(result.originalEmail.processingMethod),
+      processingTime: result.processingMetadata.totalProcessingTime,
+      totalItemsExtracted: result.processingMetadata.dataExtractionStats.totalItemsExtracted,
+      uniqueItemsAfterDeduplication: result.processingMetadata.dataExtractionStats.uniqueItemsAfterDeduplication,
+      averageConfidence: result.processingMetadata.dataExtractionStats.averageConfidence,
+      sourceBreakdown: result.processingMetadata.sourceBreakdown,
+      processingMethod: result.originalEmail.processingMethod
+    };
   }
 
   /**
@@ -93,12 +111,12 @@ export class FileProcessorService {
           break;
           
         case '.csv':
-          result = await this.processCSV(filePath);
+          result = await this.processCSVFile(filePath);
           break;
           
         // Documents  
         case '.pdf':
-          result = await this.processPDF(filePath);
+          result = await this.processPDFFile(filePath);
           break;
           
         case '.docx':
@@ -118,7 +136,7 @@ export class FileProcessorService {
         case '.bmp':
         case '.tiff':
         case '.webp':
-          result = await this.processImage(filePath);
+          result = await this.processImageFile(filePath);
           break;
           
         // Email
@@ -197,7 +215,7 @@ export class FileProcessorService {
         fileName,
         fileType: fileExtension,
         processingTime: Date.now() - startTime,
-        error: error instanceof Error ? error.message : 'Unknown processing error'
+        error: error instanceof Error ? error instanceof Error ? error.message : String(error) : 'Unknown processing error'
       };
     }
   }
@@ -223,13 +241,38 @@ export class FileProcessorService {
   }
 
   /**
-   * Process CSV files with robust parsing
+   * Process Excel content (public method for buffers)
    */
-  private async processCSV(filePath: string): Promise<ExtractedData[]> {
+  async processExcel(content: Buffer, sourceName?: string): Promise<ExtractedData[]> {
+    const workbook = XLSX.read(content, { type: 'buffer' });
+    const results: ExtractedData[] = [];
+
+    // Process all worksheets
+    for (const sheetName of workbook.SheetNames) {
+      const worksheet = workbook.Sheets[sheetName];
+      const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+      
+      const sheetResults = this.extractFromTableData(jsonData as any[][], sourceName || `Excel: ${sheetName}`);
+      results.push(...sheetResults);
+    }
+
+    return results;
+  }
+
+  /**
+   * Process CSV files with robust parsing (for files)
+   */
+  private async processCSVFile(filePath: string): Promise<ExtractedData[]> {
     const content = await fs.readFile(filePath, 'utf-8');
-    
+    return this.processCSV(content, 'CSV');
+  }
+
+  /**
+   * Process CSV content with robust parsing (public method)
+   */
+  async processCSV(csvContent: string, sourceName?: string): Promise<ExtractedData[]> {
     return new Promise((resolve, reject) => {
-      Papa.parse(content, {
+      Papa.parse(csvContent, {
         header: false,
         skipEmptyLines: true,
         complete: (result) => {
@@ -241,20 +284,27 @@ export class FileProcessorService {
           }
         },
         error: (error: any) => {
-          reject(new Error(`CSV parsing failed: ${error.message}`));
+          reject(new Error(`CSV parsing failed: ${error instanceof Error ? error.message : String(error)}`));
         }
       });
     });
   }
 
   /**
-   * Process PDF documents with text extraction
+   * Process PDF documents with text extraction (for files)
    */
-  private async processPDF(filePath: string): Promise<ExtractedData[]> {
+  private async processPDFFile(filePath: string): Promise<ExtractedData[]> {
     const buffer = await fs.readFile(filePath);
-    const pdfData = await pdfParse.default(buffer);
+    return this.processPDF(buffer, 'PDF');
+  }
+
+  /**
+   * Process PDF documents with text extraction (public method for buffers)  
+   */
+  async processPDF(content: Buffer, sourceName?: string): Promise<ExtractedData[]> {
+    const pdfData = await pdfParse.default(content);
     
-    return this.extractFromText(pdfData.text, 'PDF');
+    return this.extractFromText(pdfData.text, sourceName || 'PDF');
   }
 
   /**
@@ -262,9 +312,16 @@ export class FileProcessorService {
    */
   private async processWordDocument(filePath: string): Promise<ExtractedData[]> {
     const buffer = await fs.readFile(filePath);
-    const result = await mammoth.extractRawText({ buffer });
+    return this.processWord(buffer, 'Word Document');
+  }
+
+  /**
+   * Process Word document content (public method for buffers)
+   */
+  async processWord(content: Buffer, sourceName?: string): Promise<ExtractedData[]> {
+    const result = await mammoth.extractRawText({ buffer: content });
     
-    return this.extractFromText(result.value, 'Word Document');
+    return this.extractFromText(result.value, sourceName || 'Word Document');
   }
 
   /**
@@ -276,16 +333,24 @@ export class FileProcessorService {
   }
 
   /**
-   * Process images using OCR
+   * Process image files using OCR (for files)
    */
-  private async processImage(filePath: string): Promise<ExtractedData[]> {
+  private async processImageFile(filePath: string): Promise<ExtractedData[]> {
+    const buffer = await fs.readFile(filePath);
+    return this.processImage(buffer, 'Image OCR');
+  }
+
+  /**
+   * Process image content using OCR (public method)
+   */
+  async processImage(imageContent: Buffer, sourceName?: string): Promise<ExtractedData[]> {
     if (!this.ocrWorker) {
       throw new Error('OCR not available - image processing disabled');
     }
 
     try {
-      const { data: { text } } = await this.ocrWorker.recognize(filePath);
-      return this.extractFromText(text, 'Image OCR');
+      const { data: { text } } = await this.ocrWorker.recognize(imageContent);
+      return this.extractFromText(text, sourceName || 'Image OCR');
     } catch (error) {
       console.error('OCR processing failed:', error);
       return [];
@@ -293,30 +358,42 @@ export class FileProcessorService {
   }
 
   /**
-   * Process MSG files (Outlook emails) - placeholder for now
+   * Process MSG files (Outlook emails) using unified email processor
    */
   private async processMSGFile(filePath: string): Promise<ExtractedData[]> {
-    // TODO: Implement MSG parsing using msg-reader or similar
-    // For now, treat as binary and attempt text extraction
     try {
-      const buffer = await fs.readFile(filePath);
-      const text = buffer.toString('utf-8', 0, Math.min(buffer.length, 10000));
-      return this.extractFromText(text, 'MSG Email');
-    } catch {
-      return [];
+      const result = await this.unifiedEmailProcessor.processEmail(filePath);
+      console.log(`Enhanced MSG processing: ${this.unifiedEmailProcessor.getProcessingSummary(result)}`);
+      return result.finalResults;
+    } catch (error) {
+      console.warn(`Unified MSG processing failed, falling back to basic extraction: ${error instanceof Error ? error.message : String(error)}`);
+      // Fallback to basic processing
+      try {
+        const buffer = await fs.readFile(filePath);
+        const text = buffer.toString('utf-8', 0, Math.min(buffer.length, 10000));
+        return this.extractFromText(text, 'MSG Email (Basic)');
+      } catch {
+        return [];
+      }
     }
   }
 
   /**
-   * Process EML files (standard email format)
+   * Process EML files (standard email format) using unified email processor
    */
   private async processEMLFile(filePath: string): Promise<ExtractedData[]> {
-    const content = await fs.readFile(filePath, 'utf-8');
-    // Simple email parsing - extract body content
-    const bodyMatch = content.match(/\n\n([\s\S]*?)$/);
-    const bodyText = bodyMatch ? bodyMatch[1] : content;
-    
-    return this.extractFromText(bodyText, 'EML Email');
+    try {
+      const result = await this.unifiedEmailProcessor.processEmail(filePath);
+      console.log(`Enhanced EML processing: ${this.unifiedEmailProcessor.getProcessingSummary(result)}`);
+      return result.finalResults;
+    } catch (error) {
+      console.warn(`Unified EML processing failed, falling back to basic extraction: ${error instanceof Error ? error.message : String(error)}`);
+      // Fallback to basic processing
+      const content = await fs.readFile(filePath, 'utf-8');
+      const bodyMatch = content.match(/\n\n([\s\S]*?)$/);
+      const bodyText = bodyMatch ? bodyMatch[1] : content;
+      return this.extractFromText(bodyText, 'EML Email (Basic)');
+    }
   }
 
   /**
@@ -515,7 +592,7 @@ export class FileProcessorService {
   /**
    * Extract data from unstructured text using pattern matching
    */
-  private extractFromText(text: string, source: string): ExtractedData[] {
+  extractFromText(text: string, source: string): ExtractedData[] {
     const results: ExtractedData[] = [];
     const lines = text.split('\n');
     
@@ -717,7 +794,7 @@ export class FileProcessorService {
           model: product.model,
           description: product.description,
           price: product.price?.value,
-          type: product.product_type,
+          type: product.product_type as ProductType,
           source: 'OpenAI Enhanced',
           confidence: product.confidence
         };
@@ -735,7 +812,7 @@ export class FileProcessorService {
           existingSku.price = product.price.value;
         }
         if (!existingSku.type && product.product_type) {
-          existingSku.type = product.product_type;
+          existingSku.type = product.product_type as ProductType;
         }
         // Boost confidence for OpenAI-enhanced products
         existingSku.confidence = Math.max(existingSku.confidence || 0.5, product.confidence);
