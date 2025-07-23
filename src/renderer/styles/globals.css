@@ -81,6 +81,45 @@ body {
   color: #555;
 }
 
+/* Professional Centered Page Headers - Shared Styles */
+.page-header-container {
+  background: white;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 32px 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.page-header-global {
+  max-width: 1200px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.page-header-global h1 {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin-bottom: 12px;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+
+.page-header-global p {
+  font-size: 1.125rem;
+  color: #64748b;
+  margin: 0 auto;
+  font-weight: 400;
+  max-width: 600px;
+  line-height: 1.6;
+}
+
+.page-actions-global {
+  margin-top: 24px;
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
 /* Responsive design */
 @media (max-width: 768px) {
   .app-header {
@@ -97,5 +136,17 @@ body {
   
   .status-grid {
     grid-template-columns: 1fr;
+  }
+  
+  .page-header-container {
+    padding: 24px 16px;
+  }
+
+  .page-header-global h1 {
+    font-size: 2rem;
+  }
+  
+  .page-header-global p {
+    font-size: 1rem;
   }
 }

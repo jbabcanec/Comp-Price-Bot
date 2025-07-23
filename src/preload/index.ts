@@ -62,6 +62,17 @@ export interface ElectronAPI {
     isSecureStorageAvailable: () => Promise<boolean>;
   };
 
+  // History operations
+  history: {
+    getAll: (limit?: number, offset?: number) => Promise<IpcResponse<any[]>>;
+    getByCompany: (company: string) => Promise<IpcResponse<any[]>>;
+    getAnalytics: () => Promise<IpcResponse<any>>;
+    create: (record: any) => Promise<IpcResponse<{ id: number }>>;
+    delete: (id: number) => Promise<IpcResponse<boolean>>;
+    getStatsByDate: (startDate: string, endDate: string) => Promise<IpcResponse<any>>;
+    exportCsv: () => Promise<IpcResponse<string>>;
+  };
+
   // Application operations
   app: {
     getVersion: () => Promise<IpcResponse<string>>;
@@ -129,6 +140,17 @@ const electronAPI: ElectronAPI = {
     validateOpenAI: (apiKey?: string) => ipcRenderer.invoke('api-key:validate-openai', apiKey),
     getUsage: () => ipcRenderer.invoke('api-key:get-usage'),
     isSecureStorageAvailable: () => ipcRenderer.invoke('api-key:secure-storage-available'),
+  },
+
+  // History operations
+  history: {
+    getAll: (limit?: number, offset?: number) => ipcRenderer.invoke('history:getAll', limit, offset),
+    getByCompany: (company: string) => ipcRenderer.invoke('history:getByCompany', company),
+    getAnalytics: () => ipcRenderer.invoke('history:getAnalytics'),
+    create: (record: any) => ipcRenderer.invoke('history:create', record),
+    delete: (id: number) => ipcRenderer.invoke('history:delete', id),
+    getStatsByDate: (startDate: string, endDate: string) => ipcRenderer.invoke('history:getStatsByDate', startDate, endDate),
+    exportCsv: () => ipcRenderer.invoke('history:exportCsv'),
   },
 
   // Application operations

@@ -49,6 +49,15 @@ export const IPC_CHANNELS = {
   API_KEY_GET_USAGE: 'api-key:get-usage',
   API_KEY_SECURE_STORAGE_AVAILABLE: 'api-key:secure-storage-available',
   
+  // History operations
+  HISTORY_GET_ALL: 'history:getAll',
+  HISTORY_GET_BY_COMPANY: 'history:getByCompany',
+  HISTORY_GET_ANALYTICS: 'history:getAnalytics',
+  HISTORY_CREATE: 'history:create',
+  HISTORY_DELETE: 'history:delete',
+  HISTORY_GET_STATS_BY_DATE: 'history:getStatsByDate',
+  HISTORY_EXPORT_CSV: 'history:exportCsv',
+  
   // Application operations
   APP_GET_VERSION: 'app:getVersion',
   APP_GET_PATH: 'app:getPath',

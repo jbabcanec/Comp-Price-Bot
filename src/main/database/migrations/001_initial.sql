@@ -19,8 +19,8 @@ CREATE TABLE IF NOT EXISTS products (
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
--- Competitor SKU mappings
-CREATE TABLE IF NOT EXISTS mappings (
+-- Competitor SKU mappings  
+CREATE TABLE IF NOT EXISTS crosswalk_mappings (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   our_sku TEXT NOT NULL,
   competitor_sku TEXT NOT NULL,
@@ -46,7 +46,14 @@ CREATE TABLE IF NOT EXISTS processing_history (
   total_items INTEGER DEFAULT 0,
   matched_items INTEGER DEFAULT 0,
   unmatched_items INTEGER DEFAULT 0,
+  average_confidence REAL DEFAULT 0,
   processing_time_ms INTEGER,
+  exact_matches INTEGER DEFAULT 0,
+  fuzzy_matches INTEGER DEFAULT 0,
+  spec_matches INTEGER DEFAULT 0,
+  ai_matches INTEGER DEFAULT 0,
+  review_required INTEGER DEFAULT 0,
+  file_size INTEGER DEFAULT 0,
   status TEXT CHECK(status IN ('success', 'partial', 'failed')) DEFAULT 'success',
   error_message TEXT,
   processed_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -82,9 +89,9 @@ CREATE INDEX IF NOT EXISTS idx_products_sku ON products(sku);
 CREATE INDEX IF NOT EXISTS idx_products_brand_type ON products(brand, type);
 CREATE INDEX IF NOT EXISTS idx_products_specs ON products(tonnage, seer, type);
 
-CREATE INDEX IF NOT EXISTS idx_mappings_our_sku ON mappings(our_sku);
-CREATE INDEX IF NOT EXISTS idx_mappings_competitor ON mappings(competitor_sku, competitor_company);
-CREATE INDEX IF NOT EXISTS idx_mappings_verified ON mappings(verified);
+CREATE INDEX IF NOT EXISTS idx_crosswalk_mappings_our_sku ON crosswalk_mappings(our_sku);
+CREATE INDEX IF NOT EXISTS idx_crosswalk_mappings_competitor ON crosswalk_mappings(competitor_sku, competitor_company);
+CREATE INDEX IF NOT EXISTS idx_crosswalk_mappings_verified ON crosswalk_mappings(verified);
 
 CREATE INDEX IF NOT EXISTS idx_processing_history_hash ON processing_history(file_hash);
 CREATE INDEX IF NOT EXISTS idx_processing_history_company ON processing_history(company_name);
@@ -110,10 +117,10 @@ BEGIN
   UPDATE products SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
 END;
 
-CREATE TRIGGER IF NOT EXISTS mappings_updated_at 
-  AFTER UPDATE ON mappings
+CREATE TRIGGER IF NOT EXISTS crosswalk_mappings_updated_at 
+  AFTER UPDATE ON crosswalk_mappings
 BEGIN
-  UPDATE mappings SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
+  UPDATE crosswalk_mappings SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
 END;
 
 CREATE TRIGGER IF NOT EXISTS settings_updated_at 

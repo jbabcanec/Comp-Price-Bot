@@ -27,38 +27,6 @@ export const Header: React.FC<HeaderProps> = ({ title = 'HVAC SKU Crosswalk Anal
     getVersion();
   }, []);
 
-  const handleMinimize = async () => {
-    try {
-      const electronAPI = (window as any).electronAPI;
-      if (electronAPI?.window?.minimize) {
-        await electronAPI.window.minimize();
-      }
-    } catch (error) {
-      console.error('Failed to minimize window:', error);
-    }
-  };
-
-  const handleMaximize = async () => {
-    try {
-      const electronAPI = (window as any).electronAPI;
-      if (electronAPI?.window?.maximize) {
-        await electronAPI.window.maximize();
-      }
-    } catch (error) {
-      console.error('Failed to maximize window:', error);
-    }
-  };
-
-  const handleClose = async () => {
-    try {
-      const electronAPI = (window as any).electronAPI;
-      if (electronAPI?.window?.close) {
-        await electronAPI.window.close();
-      }
-    } catch (error) {
-      console.error('Failed to close window:', error);
-    }
-  };
 
   return (
     <header className="app-header">
@@ -84,19 +52,6 @@ export const Header: React.FC<HeaderProps> = ({ title = 'HVAC SKU Crosswalk Anal
         </div>
       </div>
 
-      <div className="header-right">
-        <div className="window-controls">
-          <button className="control-button minimize" onClick={handleMinimize} title="Minimize">
-            −
-          </button>
-          <button className="control-button maximize" onClick={handleMaximize} title="Maximize">
-            □
-          </button>
-          <button className="control-button close" onClick={handleClose} title="Close">
-            ×
-          </button>
-        </div>
-      </div>
     </header>
   );
 };

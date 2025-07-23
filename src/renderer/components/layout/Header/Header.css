@@ -1,7 +1,6 @@
 .app-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   height: 56px;
   background: #ffffff;
   color: #1f2937;
@@ -96,58 +95,6 @@
   color: #6b7280;
 }
 
-.header-right {
-  display: flex;
-  align-items: center;
-  flex-shrink: 0;
-  -webkit-app-region: no-drag;
-}
-
-.window-controls {
-  display: flex;
-  gap: 4px;
-}
-
-.control-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border: none;
-  border-radius: 4px;
-  background: transparent;
-  color: #6b7280;
-  font-size: 14px;
-  font-weight: 400;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.control-button:hover {
-  background: #f3f4f6;
-  color: #374151;
-}
-
-.control-button.close:hover {
-  background: #ef4444;
-  color: white;
-}
-
-.control-button.minimize {
-  font-size: 20px;
-  line-height: 1;
-}
-
-.control-button.maximize {
-  font-size: 14px;
-  line-height: 1;
-}
-
-.control-button.close {
-  font-size: 18px;
-  line-height: 1;
-}
 
 @media (max-width: 768px) {
   .app-header {
