@@ -14,6 +14,7 @@ import { OpenAIProductExtractor, OpenAIProductSchema } from '@shared/services/op
 import { UniversalSpecDetector } from '@shared/utils/universalSpecDetector';
 import { UnifiedEmailProcessor, UnifiedEmailProcessingResult } from './unifiedEmailProcessor.service';
 import { ExtractedData, EmailProcessingSummary, ProductType } from '@shared/types/product.types';
+import { logger } from '../services/logger.service';
 
 /**
  * File processing result with metadata
@@ -38,14 +39,26 @@ export class FileProcessorService {
   private ocrWorker: any;
   private openaiExtractor?: OpenAIProductExtractor;
   private useOpenAI: boolean = false;
-  private unifiedEmailProcessor: UnifiedEmailProcessor;
+  private unifiedEmailProcessor?: UnifiedEmailProcessor;
   
   constructor(openaiApiKey?: string) {
-    this.unifiedEmailProcessor = new UnifiedEmailProcessor();
     if (openaiApiKey) {
+      logger.info('file-ops', 'Initializing FileProcessor with OpenAI support');
       this.openaiExtractor = new OpenAIProductExtractor(openaiApiKey);
       this.useOpenAI = true;
+    } else {
+      logger.info('file-ops', 'Initializing FileProcessor without OpenAI support');
     }
+  }
+
+  /**
+   * Get or create unified email processor (lazy initialization)
+   */
+  private getUnifiedEmailProcessor(): UnifiedEmailProcessor {
+    if (!this.unifiedEmailProcessor) {
+      this.unifiedEmailProcessor = new UnifiedEmailProcessor();
+    }
+    return this.unifiedEmailProcessor;
   }
 
   /**
@@ -54,12 +67,14 @@ export class FileProcessorService {
   private async initializeOCR(): Promise<void> {
     if (this.ocrWorker) return;
     
+    logger.debug('file-ops', 'Initializing OCR worker');
     try {
       this.ocrWorker = await createWorker();
       await this.ocrWorker.loadLanguage('eng');
       await this.ocrWorker.initialize('eng');
+      logger.info('file-ops', 'OCR worker initialized successfully');
     } catch (error: any) {
-      console.warn('OCR initialization failed, image processing will be limited:', error);
+      logger.warn('file-ops', 'OCR initialization failed, image processing will be limited', error);
       this.ocrWorker = null; // Mark as failed
     }
   }
@@ -74,7 +89,7 @@ export class FileProcessorService {
       throw new Error(`Email processing only supports .msg and .eml files, got: ${fileExtension}`);
     }
     
-    return await this.unifiedEmailProcessor.processEmail(filePath);
+    return await this.getUnifiedEmailProcessor().processEmail(filePath);
   }
 
   /**
@@ -100,7 +115,19 @@ export class FileProcessorService {
     const fileName = path.basename(filePath);
     const fileExtension = path.extname(filePath).toLowerCase();
     
+    logger.fileOperation('process', filePath, true, `Starting file processing - Type: ${fileExtension}, OpenAI: ${useOpenAI}`);
+    
     try {
+      // Get file stats for logging
+      const stats = await fs.stat(filePath);
+      logger.debug('file-ops', 'File details', {
+        fileName,
+        fileSize: stats.size,
+        fileSizeKB: Math.round(stats.size / 1024),
+        fileType: fileExtension,
+        modified: stats.mtime
+      });
+      
       let result: ExtractedData[];
       
       // Route to appropriate processor based on file type
@@ -109,25 +136,30 @@ export class FileProcessorService {
         case '.xlsx':
         case '.xls':
         case '.ods':
+          logger.debug('file-ops', `Processing spreadsheet file: ${fileExtension}`);
           result = await this.processSpreadsheet(filePath);
           break;
           
         case '.csv':
+          logger.debug('file-ops', 'Processing CSV file');
           result = await this.processCSVFile(filePath);
           break;
           
         // Documents  
         case '.pdf':
+          logger.debug('file-ops', 'Processing PDF document');
           result = await this.processPDFFile(filePath);
           break;
           
         case '.docx':
         case '.doc':
+          logger.debug('file-ops', `Processing Word document: ${fileExtension}`);
           result = await this.processWordDocument(filePath);
           break;
           
         case '.txt':
         case '.rtf':
+          logger.debug('file-ops', `Processing text file: ${fileExtension}`);
           result = await this.processTextFile(filePath);
           break;
           
@@ -138,15 +170,18 @@ export class FileProcessorService {
         case '.bmp':
         case '.tiff':
         case '.webp':
+          logger.debug('file-ops', `Processing image file: ${fileExtension}`);
           result = await this.processImageFile(filePath);
           break;
           
         // Email
         case '.msg':
+          logger.debug('file-ops', 'Processing Outlook MSG email');
           result = await this.processMSGFile(filePath);
           break;
           
         case '.eml':
+          logger.debug('file-ops', 'Processing standard EML email');
           result = await this.processEMLFile(filePath);
           break;
           
@@ -171,6 +206,7 @@ export class FileProcessorService {
           
         // Default: attempt multiple strategies
         default:
+          logger.warn('file-ops', `Unknown file type: ${fileExtension}, attempting generic processing`);
           result = await this.processUnknownFile(filePath);
           break;
       }
@@ -179,45 +215,75 @@ export class FileProcessorService {
       let openaiResults: OpenAIProductSchema | undefined;
       let extractionMethod: 'traditional' | 'openai' | 'hybrid' = 'traditional';
       
+      logger.info('file-ops', `Initial extraction complete`, {
+        itemsExtracted: result.length,
+        processingTimeMs: processingTime
+      });
+      
       // Enhance with OpenAI if available and requested
       if (useOpenAI && this.openaiExtractor && result.length > 0) {
         try {
+          logger.debug('file-ops', 'Starting OpenAI enhancement');
+          const openaiStartTime = Date.now();
+          
           // Create combined text from all extractions for OpenAI processing
           const combinedText = this.createCombinedTextForOpenAI(result, filePath);
           if (combinedText.length > 100) {
+            logger.debug('file-ops', 'Sending data to OpenAI', { textLength: combinedText.length });
             openaiResults = await this.openaiExtractor.extractProducts(combinedText);
             
             // Merge OpenAI results with traditional results
             const enhancedData = this.mergeTraditionalWithOpenAI(result, openaiResults);
             extractionMethod = enhancedData.length > result.length ? 'hybrid' : 'openai';
             result = enhancedData;
+            
+            const openaiTime = Date.now() - openaiStartTime;
+            logger.info('file-ops', 'OpenAI enhancement complete', {
+              openaiTimeMs: openaiTime,
+              originalCount: result.length,
+              enhancedCount: enhancedData.length,
+              extractionMethod
+            });
+          } else {
+            logger.debug('file-ops', 'Text too short for OpenAI processing', { textLength: combinedText.length });
           }
         } catch (error) {
-          console.warn('OpenAI enhancement failed, using traditional extraction:', error);
+          logger.warn('file-ops', 'OpenAI enhancement failed, using traditional extraction', error);
           // Continue with traditional results
         }
       }
       
+      const cleanedData = this.validateAndCleanData(result);
+      const totalProcessingTime = Date.now() - startTime;
+      
+      logger.fileOperation('process', filePath, true, 
+        `Processing complete - Items: ${cleanedData.length}, Time: ${totalProcessingTime}ms, Method: ${extractionMethod}`);
+      
       return {
         success: true,
-        data: this.validateAndCleanData(result),
+        data: cleanedData,
         fileName,
         fileType: fileExtension,
-        processingTime,
+        processingTime: totalProcessingTime,
         openaiResults,
         extractionMethod
       };
       
     } catch (error) {
-      console.error(`Error processing file ${fileName}:`, error);
+      const processingTime = Date.now() - startTime;
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      
+      logger.fileOperation('process', filePath, false, 
+        `Processing failed after ${processingTime}ms: ${errorMessage}`, 
+        error instanceof Error ? error : new Error(errorMessage));
       
       return {
         success: false,
         data: [],
         fileName,
         fileType: fileExtension,
-        processingTime: Date.now() - startTime,
-        error: error instanceof Error ? error instanceof Error ? error.message : String(error) : 'Unknown processing error'
+        processingTime,
+        error: errorMessage
       };
     }
   }
@@ -230,13 +296,20 @@ export class FileProcessorService {
     const workbook = XLSX.read(buffer, { type: 'buffer' });
     const results: ExtractedData[] = [];
 
+    logger.debug('file-ops', `Processing ${workbook.SheetNames.length} worksheets`);
+
     // Process all worksheets
     for (const sheetName of workbook.SheetNames) {
       const worksheet = workbook.Sheets[sheetName];
       const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
       
+      logger.debug('file-ops', `Processing sheet: ${sheetName}`, { rows: jsonData.length });
       const sheetResults = this.extractFromTableData(jsonData as any[][], `Sheet: ${sheetName}`);
-      results.push(...sheetResults);
+      
+      if (sheetResults.length > 0) {
+        logger.info('file-ops', `Extracted ${sheetResults.length} items from sheet: ${sheetName}`);
+        results.push(...sheetResults);
+      }
     }
 
     return results;
@@ -346,18 +419,38 @@ export class FileProcessorService {
    * Process image content using OCR (public method)
    */
   async processImage(imageContent: Buffer, sourceName?: string): Promise<ExtractedData[]> {
+    logger.debug('file-ops', 'Starting image OCR processing', { 
+      bufferSize: imageContent.length,
+      source: sourceName 
+    });
+    
     await this.initializeOCR();
     
     if (!this.ocrWorker) {
-      console.warn('OCR not available, skipping image processing');
+      logger.warn('file-ops', 'OCR not available, skipping image processing');
       return [];
     }
 
     try {
+      const startTime = Date.now();
       const { data: { text } } = await this.ocrWorker.recognize(imageContent);
-      return this.extractFromText(text, sourceName || 'Image OCR');
+      const ocrTime = Date.now() - startTime;
+      
+      logger.info('file-ops', 'OCR text extraction complete', { 
+        ocrTimeMs: ocrTime,
+        textLength: text.length,
+        source: sourceName 
+      });
+      
+      const results = this.extractFromText(text, sourceName || 'Image OCR');
+      
+      if (results.length > 0) {
+        logger.info('file-ops', `OCR extraction found ${results.length} items from image`);
+      }
+      
+      return results;
     } catch (error) {
-      console.error('OCR processing failed:', error);
+      logger.error('file-ops', 'OCR processing failed', error instanceof Error ? error : new Error(String(error)));
       return [];
     }
   }
@@ -367,17 +460,30 @@ export class FileProcessorService {
    */
   private async processMSGFile(filePath: string): Promise<ExtractedData[]> {
     try {
-      const result = await this.unifiedEmailProcessor.processEmail(filePath);
-      console.log(`Enhanced MSG processing: ${this.unifiedEmailProcessor.getProcessingSummary(result)}`);
+      logger.debug('file-ops', 'Processing MSG file with unified email processor');
+      const result = await this.getUnifiedEmailProcessor().processEmail(filePath);
+      
+      logger.info('file-ops', 'Enhanced MSG processing completed', {
+        itemsExtracted: result.finalResults.length,
+        processingTime: result.processingMetadata.totalProcessingTime,
+        attachmentCount: result.processingMetadata.sourceBreakdown.attachmentOnly || 0,
+        imageCount: result.processingMetadata.sourceBreakdown.imageOnly || 0,
+        confidence: result.processingMetadata.dataExtractionStats.averageConfidence
+      });
+      
       return result.finalResults;
     } catch (error) {
-      console.warn(`Unified MSG processing failed, falling back to basic extraction: ${error instanceof Error ? error.message : String(error)}`);
+      logger.warn('file-ops', 'Unified MSG processing failed, falling back to basic extraction', error);
       // Fallback to basic processing
       try {
+        logger.debug('file-ops', 'Attempting basic MSG text extraction');
         const buffer = await fs.readFile(filePath);
         const text = buffer.toString('utf-8', 0, Math.min(buffer.length, 10000));
-        return this.extractFromText(text, 'MSG Email (Basic)');
-      } catch {
+        const results = this.extractFromText(text, 'MSG Email (Basic)');
+        logger.info('file-ops', `Basic MSG extraction found ${results.length} items`);
+        return results;
+      } catch (fallbackError) {
+        logger.error('file-ops', 'Basic MSG extraction also failed', fallbackError instanceof Error ? fallbackError : new Error(String(fallbackError)));
         return [];
       }
     }
@@ -388,8 +494,17 @@ export class FileProcessorService {
    */
   private async processEMLFile(filePath: string): Promise<ExtractedData[]> {
     try {
-      const result = await this.unifiedEmailProcessor.processEmail(filePath);
-      console.log(`Enhanced EML processing: ${this.unifiedEmailProcessor.getProcessingSummary(result)}`);
+      logger.debug('file-ops', 'Processing EML file with unified email processor');
+      const result = await this.getUnifiedEmailProcessor().processEmail(filePath);
+      
+      logger.info('file-ops', 'Enhanced EML processing completed', {
+        itemsExtracted: result.finalResults.length,
+        processingTime: result.processingMetadata.totalProcessingTime,
+        attachmentCount: result.processingMetadata.sourceBreakdown.attachmentOnly || 0,
+        imageCount: result.processingMetadata.sourceBreakdown.imageOnly || 0,
+        confidence: result.processingMetadata.dataExtractionStats.averageConfidence
+      });
+      
       return result.finalResults;
     } catch (error) {
       console.warn(`Unified EML processing failed, falling back to basic extraction: ${error instanceof Error ? error.message : String(error)}`);
@@ -598,6 +713,12 @@ export class FileProcessorService {
    * Extract data from unstructured text using pattern matching
    */
   extractFromText(text: string, source: string): ExtractedData[] {
+    logger.debug('file-ops', 'Extracting data from text', { 
+      source,
+      textLength: text.length,
+      lineCount: text.split('\n').length 
+    });
+    
     const results: ExtractedData[] = [];
     const lines = text.split('\n');
     

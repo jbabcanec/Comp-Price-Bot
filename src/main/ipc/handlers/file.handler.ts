@@ -4,6 +4,7 @@ import { IPC_CHANNELS } from '../channels';
 import { FileSelectOptions } from '@shared/types/ipc.types';
 import { FileProcessorService } from '../../services/fileProcessor.service';
 import { ProductValidatorService } from '../../services/productValidator.service';
+import { logger } from '../../services/logger.service';
 
 const fileProcessor = new FileProcessorService();
 const productValidator = new ProductValidatorService();
@@ -11,6 +12,12 @@ const productValidator = new ProductValidatorService();
 export function registerFileHandlers(): void {
   // File selection dialog
   ipcMain.handle(IPC_CHANNELS.FILE_SELECT, async (_, options: FileSelectOptions) => {
+    logger.app('file-select', 'User initiated file selection dialog', {
+      title: options.title,
+      filters: options.filters,
+      properties: options.properties
+    });
+    
     try {
       const result = await dialog.showOpenDialog({
         title: options.title || 'Select File',
@@ -21,12 +28,16 @@ export function registerFileHandlers(): void {
       });
 
       if (result.canceled || result.filePaths.length === 0) {
+        logger.info('app', 'File selection dialog canceled by user');
         return { success: true, data: null };
       }
 
-      return { success: true, data: result.filePaths[0] };
+      const selectedFile = result.filePaths[0];
+      logger.fileOperation('select', selectedFile, true, 'File selected by user');
+      return { success: true, data: selectedFile };
     } catch (error) {
-      console.error('IPC Error - File Select:', error);
+      logger.error('file-ops', 'File selection dialog failed', 
+        error instanceof Error ? error : new Error(String(error)));
       return {
         success: false,
         error: {
@@ -39,11 +50,23 @@ export function registerFileHandlers(): void {
 
   // File read operation
   ipcMain.handle(IPC_CHANNELS.FILE_READ, async (_, filePath: string) => {
+    logger.fileOperation('read', filePath, true, 'Starting file read');
+    const startTime = Date.now();
+    
     try {
       const content = await readFile(filePath, 'utf-8');
+      const readTime = Date.now() - startTime;
+      
+      logger.fileOperation('read', filePath, true, 
+        `File read complete - Size: ${content.length} chars, Time: ${readTime}ms`);
+      
       return { success: true, data: content };
     } catch (error) {
-      console.error('IPC Error - File Read:', error);
+      const readTime = Date.now() - startTime;
+      logger.fileOperation('read', filePath, false, 
+        `File read failed after ${readTime}ms`, 
+        error instanceof Error ? error : new Error(String(error)));
+        
       return {
         success: false,
         error: {
@@ -56,11 +79,23 @@ export function registerFileHandlers(): void {
 
   // File write operation
   ipcMain.handle(IPC_CHANNELS.FILE_WRITE, async (_, filePath: string, content: string) => {
+    logger.fileOperation('write', filePath, true, `Starting file write - Size: ${content.length} chars`);
+    const startTime = Date.now();
+    
     try {
       await writeFile(filePath, content, 'utf-8');
+      const writeTime = Date.now() - startTime;
+      
+      logger.fileOperation('write', filePath, true, 
+        `File write complete - Time: ${writeTime}ms`);
+        
       return { success: true, data: true };
     } catch (error) {
-      console.error('IPC Error - File Write:', error);
+      const writeTime = Date.now() - startTime;
+      logger.fileOperation('write', filePath, false, 
+        `File write failed after ${writeTime}ms`, 
+        error instanceof Error ? error : new Error(String(error)));
+        
       return {
         success: false,
         error: {
@@ -73,15 +108,35 @@ export function registerFileHandlers(): void {
 
   // Real file processing using FileProcessorService
   ipcMain.handle(IPC_CHANNELS.FILE_PROCESS, async (_, filePath: string) => {
+    logger.app('file-process', 'User initiated file processing', { filePath });
+    
     try {
       const result = await fileProcessor.processFile(filePath);
+      
+      if (result.success) {
+        logger.info('app', 'File processing completed successfully', {
+          filePath,
+          itemsExtracted: result.data.length,
+          processingTime: result.processingTime,
+          extractionMethod: result.extractionMethod
+        });
+      } else {
+        logger.warn('app', 'File processing completed with errors', {
+          filePath,
+          error: result.error
+        });
+      }
+      
       return { 
         success: result.success, 
         data: result,
         error: result.success ? undefined : { message: result.error, code: 'FILE_PROCESS_ERROR' }
       };
     } catch (error) {
-      console.error('IPC Error - File Process:', error);
+      logger.error('app', 'File processing failed unexpectedly', 
+        error instanceof Error ? error : new Error(String(error)),
+        { filePath });
+        
       return {
         success: false,
         error: {
@@ -173,5 +228,5 @@ export function registerFileHandlers(): void {
     }
   });
 
-  console.log('File IPC handlers registered');
+  logger.info('app', 'File IPC handlers registered');
 }

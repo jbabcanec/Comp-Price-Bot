@@ -47,10 +47,20 @@ export interface ProcessedEmailResult {
 }
 
 export class EmailComponentRouter {
-  private fileProcessor: FileProcessorService;
+  private fileProcessor?: FileProcessorService;
 
   constructor() {
-    this.fileProcessor = new FileProcessorService();
+    // Don't initialize FileProcessorService to avoid circular dependency
+  }
+
+  /**
+   * Get or create file processor (lazy initialization)
+   */
+  private getFileProcessor(): FileProcessorService {
+    if (!this.fileProcessor) {
+      this.fileProcessor = new FileProcessorService();
+    }
+    return this.fileProcessor;
   }
 
   /**
@@ -109,7 +119,7 @@ export class EmailComponentRouter {
 
     if (email.textContent && email.textContent.trim()) {
       try {
-        const textResults = await this.fileProcessor.extractFromText(
+        const textResults = await this.getFileProcessor().extractFromText(
           email.textContent,
           'Email Text Content'
         );
@@ -133,7 +143,7 @@ export class EmailComponentRouter {
         // Convert HTML to text for processing
         const htmlText = this.extractTextFromHTML(email.htmlContent);
         if (htmlText.trim()) {
-          const htmlResults = await this.fileProcessor.extractFromText(
+          const htmlResults = await this.getFileProcessor().extractFromText(
             htmlText,
             'Email HTML Content'
           );
@@ -143,7 +153,7 @@ export class EmailComponentRouter {
         // Extract structured data from HTML tables
         const tableData = this.extractTableDataFromHTML(email.htmlContent);
         if (tableData.length > 0) {
-          const tableResults = await this.fileProcessor.extractFromText(
+          const tableResults = await this.getFileProcessor().extractFromText(
             tableData.join('\n'),
             'Email HTML Tables'
           );
@@ -184,28 +194,28 @@ export class EmailComponentRouter {
 
     switch (extension) {
       case '.pdf':
-        return await this.fileProcessor.processPDF(attachment.content, sourceName);
+        return await this.getFileProcessor().processPDF(attachment.content, sourceName);
       
       case '.xlsx':
       case '.xls':
-        return await this.fileProcessor.processExcel(attachment.content, sourceName);
+        return await this.getFileProcessor().processExcel(attachment.content, sourceName);
       
       case '.csv':
-        return await this.fileProcessor.processCSV(attachment.content.toString('utf8'), sourceName);
+        return await this.getFileProcessor().processCSV(attachment.content.toString('utf8'), sourceName);
       
       case '.docx':
       case '.doc':
-        return await this.fileProcessor.processWord(attachment.content, sourceName);
+        return await this.getFileProcessor().processWord(attachment.content, sourceName);
       
       case '.jpg':
       case '.jpeg':
       case '.png':
       case '.tiff':
       case '.bmp':
-        return await this.fileProcessor.processImage(attachment.content, sourceName);
+        return await this.getFileProcessor().processImage(attachment.content, sourceName);
       
       case '.txt':
-        return await this.fileProcessor.extractFromText(
+        return await this.getFileProcessor().extractFromText(
           attachment.content.toString('utf8'),
           sourceName
         );
@@ -221,7 +231,7 @@ export class EmailComponentRouter {
         try {
           const textContent = attachment.content.toString('utf8');
           if (this.isValidText(textContent)) {
-            return await this.fileProcessor.extractFromText(textContent, sourceName);
+            return await this.getFileProcessor().extractFromText(textContent, sourceName);
           }
         } catch (error) {
           // Not text-based content
@@ -239,7 +249,7 @@ export class EmailComponentRouter {
     for (const image of embeddedImages) {
       try {
         const sourceName = `Embedded Image: ${image.contentId}`;
-        const imageResults = await this.fileProcessor.processImage(image.data, sourceName);
+        const imageResults = await this.getFileProcessor().processImage(image.data, sourceName);
         results.push(...imageResults);
       } catch (error) {
         console.warn(`Failed to process embedded image ${image.contentId}:`, error instanceof Error ? error.message : String(error));

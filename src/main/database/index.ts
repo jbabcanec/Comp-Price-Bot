@@ -2,6 +2,7 @@ import { DatabaseConnection, getDatabase } from './connection';
 import { DatabaseMigrator } from './migrations/migrator';
 import { ProductsRepository } from './repositories/products.repo';
 import { MappingsRepository } from './repositories/mappings.repo';
+import { logger } from '../services/logger.service';
 
 export class DatabaseService {
   private db: DatabaseConnection;
@@ -12,30 +13,38 @@ export class DatabaseService {
   public mappings: MappingsRepository;
 
   constructor() {
+    logger.debug('database', 'Creating DatabaseService instance');
     this.db = getDatabase();
     this.migrator = new DatabaseMigrator(this.db);
     
     // Initialize repositories
     this.products = new ProductsRepository(this.db);
     this.mappings = new MappingsRepository(this.db);
+    logger.debug('database', 'DatabaseService repositories initialized');
   }
 
   /**
    * Initialize the database connection and run migrations
    */
   async initialize(): Promise<void> {
+    const startTime = Date.now();
     try {
-      console.log('Initializing database...');
+      logger.info('database', 'Starting database initialization');
       
       // Connect to database
       await this.db.connect();
       
       // Run migrations
+      logger.info('database', 'Running database migrations');
       await this.migrator.migrate();
       
-      console.log('Database initialized successfully');
+      const initTime = Date.now() - startTime;
+      logger.info('database', 'Database initialized successfully', { initTimeMs: initTime });
     } catch (error) {
-      console.error('Database initialization failed:', error);
+      const initTime = Date.now() - startTime;
+      logger.error('database', 'Database initialization failed', 
+        error instanceof Error ? error : new Error(String(error)), 
+        { initTimeMs: initTime });
       throw error;
     }
   }
@@ -65,12 +74,23 @@ export class DatabaseService {
    * Health check - verify database is working
    */
   async healthCheck(): Promise<boolean> {
+    logger.debug('database', 'Running database health check');
+    const startTime = Date.now();
+    
     try {
       const version = await this.getVersion();
-      console.log(`Database health check passed - version: ${version}`);
+      const checkTime = Date.now() - startTime;
+      
+      logger.info('database', 'Database health check passed', { 
+        version, 
+        checkTimeMs: checkTime 
+      });
       return true;
     } catch (error) {
-      console.error('Database health check failed:', error);
+      const checkTime = Date.now() - startTime;
+      logger.error('database', 'Database health check failed', 
+        error instanceof Error ? error : new Error(String(error)),
+        { checkTimeMs: checkTime });
       return false;
     }
   }
