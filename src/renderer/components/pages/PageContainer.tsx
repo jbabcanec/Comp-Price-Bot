@@ -10,13 +10,14 @@ export type PageId = 'dashboard' | 'products' | 'upload' | 'database' | 'history
 
 interface PageContainerProps {
   currentPage: PageId;
+  onNavigate?: (pageId: string) => void;
 }
 
-export const PageContainer: React.FC<PageContainerProps> = ({ currentPage }) => {
+export const PageContainer: React.FC<PageContainerProps> = ({ currentPage, onNavigate }) => {
   const renderPage = () => {
     switch (currentPage) {
       case 'dashboard':
-        return <Dashboard />;
+        return <Dashboard onNavigate={onNavigate} />;
       case 'products':
         return <Products />;
       case 'upload':

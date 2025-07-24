@@ -29,7 +29,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
         
         <main className="main-content">
           <div className="content-container">
-            <PageContainer currentPage={currentPage} />
+            <PageContainer currentPage={currentPage} onNavigate={handlePageChange} />
           </div>
         </main>
       </div>
