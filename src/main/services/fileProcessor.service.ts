@@ -41,7 +41,6 @@ export class FileProcessorService {
   private unifiedEmailProcessor: UnifiedEmailProcessor;
   
   constructor(openaiApiKey?: string) {
-    this.initializeOCR();
     this.unifiedEmailProcessor = new UnifiedEmailProcessor();
     if (openaiApiKey) {
       this.openaiExtractor = new OpenAIProductExtractor(openaiApiKey);
@@ -50,15 +49,18 @@ export class FileProcessorService {
   }
 
   /**
-   * Initialize OCR worker for image processing
+   * Initialize OCR worker for image processing (lazy initialization)
    */
   private async initializeOCR(): Promise<void> {
+    if (this.ocrWorker) return;
+    
     try {
       this.ocrWorker = await createWorker();
       await this.ocrWorker.loadLanguage('eng');
       await this.ocrWorker.initialize('eng');
     } catch (error: any) {
       console.warn('OCR initialization failed, image processing will be limited:', error);
+      this.ocrWorker = null; // Mark as failed
     }
   }
 
@@ -344,8 +346,11 @@ export class FileProcessorService {
    * Process image content using OCR (public method)
    */
   async processImage(imageContent: Buffer, sourceName?: string): Promise<ExtractedData[]> {
+    await this.initializeOCR();
+    
     if (!this.ocrWorker) {
-      throw new Error('OCR not available - image processing disabled');
+      console.warn('OCR not available, skipping image processing');
+      return [];
     }
 
     try {
