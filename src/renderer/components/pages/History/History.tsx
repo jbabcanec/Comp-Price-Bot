@@ -225,7 +225,7 @@ export const History: React.FC = () => {
         </button>
       </div>
 
-      <div className="history-content">
+      <div className="history-content has-content">
         {activeTab === 'overview' && (
           <div className="overview-section">
             {/* Key Metrics */}

@@ -68,34 +68,38 @@
 }
 
 .empty-state {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(203, 213, 225, 0.5);
+  padding: 60px 40px;
+  max-width: 500px;
+  text-align: center;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 100%;
-  text-align: center;
-  color: #64748b;
-  background: white;
-  padding: 40px;
 }
 
 .empty-state-icon {
   margin-bottom: 24px;
-  color: #cbd5e1;
+  color: #9ca3af;
+  display: flex;
+  justify-content: center;
 }
 
 .empty-state h3 {
   font-size: 1.5rem;
-  font-weight: 700;
   color: #1e293b;
   margin-bottom: 12px;
+  font-weight: 600;
 }
 
 .empty-state p {
   font-size: 1rem;
-  max-width: 500px;
-  line-height: 1.7;
   color: #64748b;
+  line-height: 1.6;
+  margin: 0;
 }
 
 /* Professional Tabs */  
@@ -141,6 +145,14 @@
   max-width: 1200px;
   width: calc(100% - 40px);
   margin: 24px auto 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* When content exists, use regular layout */
+.history-content.has-content {
+  display: block;
   background: white;
   border-radius: 16px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
