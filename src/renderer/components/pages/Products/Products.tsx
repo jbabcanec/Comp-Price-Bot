@@ -50,7 +50,10 @@ type ViewMode = 'import' | 'table';
 
 export const Products: React.FC = () => {
   const [viewMode, setViewMode] = useState<ViewMode>('import');
-  const [selectedDirectory, setSelectedDirectory] = useState<string>('');
+  const [selectedDirectory, setSelectedDirectory] = useState<string>(() => {
+    // Restore directory from localStorage on component mount
+    return localStorage.getItem('selectedPriceBookDirectory') || '';
+  });
   const [productFiles, setProductFiles] = useState<ProductFile[]>([]);
   const [loading, setLoading] = useState(false);
   const [processing, setProcessing] = useState(false);
@@ -69,7 +72,7 @@ export const Products: React.FC = () => {
       }
 
       const result = await electronAPI.file.select({
-        title: 'Select Directory with Your Product Files',
+        title: 'Select Directory with Your Price Book Files',
         properties: ['openDirectory']
       });
 
@@ -79,6 +82,8 @@ export const Products: React.FC = () => {
 
       const directoryPath = result.data;
       setSelectedDirectory(directoryPath);
+      // Persist directory selection in localStorage
+      localStorage.setItem('selectedPriceBookDirectory', directoryPath);
       await loadDirectoryFiles(directoryPath);
     } catch (error) {
       console.error('Directory selection failed:', error);
@@ -135,9 +140,13 @@ export const Products: React.FC = () => {
     }
   };
 
-  // Load existing products from database
+  // Load existing products from database and restore directory files
   useEffect(() => {
     loadExistingProducts();
+    // If we have a saved directory, load its files
+    if (selectedDirectory) {
+      loadDirectoryFiles(selectedDirectory);
+    }
   }, []);
 
   const loadExistingProducts = async () => {
@@ -153,10 +162,10 @@ export const Products: React.FC = () => {
     }
   };
 
-  const handleProcessSelected = async () => {
+  const handleLoadSelected = async () => {
     const selectedFiles = productFiles.filter(f => f.selected);
     if (selectedFiles.length === 0) {
-      alert('Please select at least one file to process');
+      alert('Please select at least one file to load as your price book');
       return;
     }
 
@@ -305,8 +314,8 @@ export const Products: React.FC = () => {
   return (
     <div className="products-page">
       <div className="page-header">
-        <h1>Product Management</h1>
-        <p>Import and manage YOUR HVAC product catalog</p>
+        <h1>Your Price Book</h1>
+        <p>Load and manage your company's HVAC price book for competitive analysis</p>
       </div>
 
       <div className="page-actions">
@@ -314,14 +323,14 @@ export const Products: React.FC = () => {
           className={`btn ${viewMode === 'import' ? 'btn-primary' : 'btn-secondary'}`} 
           onClick={() => setViewMode('import')}
         >
-          Import Products
+          Load Price Book
         </button>
         <button 
           className={`btn ${viewMode === 'table' ? 'btn-primary' : 'btn-secondary'}`} 
           onClick={() => setViewMode('table')}
           disabled={importedProducts.length === 0}
         >
-          View Products ({importedProducts.length})
+          View Price Book ({importedProducts.length})
         </button>
       </div>
 
@@ -333,8 +342,8 @@ export const Products: React.FC = () => {
                 <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </div>
-            <h3>Select Your Product Directory</h3>
-            <p>Choose a directory containing your HVAC product files (CSV, Excel, JSON, TXT)</p>
+            <h3>Select Your Price Book Directory</h3>
+            <p>Choose a directory containing your company's price book files (CSV, Excel, JSON, TXT)</p>
             <button className="btn btn-primary" onClick={handleSelectDirectory} disabled={loading}>
               <div className="btn-icon">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
@@ -348,7 +357,22 @@ export const Products: React.FC = () => {
       )}
 
       {viewMode === 'import' && selectedDirectory && (
+        <div className="directory-info">
+          <h3>Selected Directory: <span className="directory-path">{selectedDirectory}</span></h3>
+        </div>
+      )}
+
+      {viewMode === 'import' && selectedDirectory && (
         <div className="page-actions">
+          <button className="btn btn-secondary" onClick={handleSelectDirectory} disabled={loading}>
+            <div className="btn-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+            Change Directory
+          </button>
+          
           <button className="btn btn-secondary" onClick={handleRefresh} disabled={loading}>
             <div className="btn-icon">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
@@ -370,7 +394,7 @@ export const Products: React.FC = () => {
 
           <button 
             className="btn btn-success" 
-            onClick={handleProcessSelected} 
+            onClick={handleLoadSelected} 
             disabled={loading || processing || selectedCount === 0}
           >
             <div className="btn-icon">
@@ -378,7 +402,7 @@ export const Products: React.FC = () => {
                 <path d="M5 12l5 5L20 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </div>
-            {processing ? 'Processing...' : `Process Selected (${selectedCount})`}
+            {processing ? 'Loading...' : `Load as Price Book (${selectedCount})`}
           </button>
         </div>
       )}
@@ -486,7 +510,7 @@ export const Products: React.FC = () => {
 
             {filteredProducts.length === 0 ? (
               <div className="no-products">
-                <p>{importedProducts.length === 0 ? 'No products imported yet.' : 'No products match your search.'}</p>
+                <p>{importedProducts.length === 0 ? 'No price book loaded yet.' : 'No products match your search.'}</p>
               </div>
             ) : (
               <div className="products-table-container">

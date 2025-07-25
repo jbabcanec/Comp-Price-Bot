@@ -1,0 +1,25 @@
+Model Number,Brand,Product Type,Description,Net Price,Tonnage,SEER Rating,HSPF,AFUE,BTU Rating,Notes
+25HCB424A003,Carrier,Heat Pump,"Infinity Series 4-Ton Heat Pump with Puron Refrigerant",2850.00,2,16,9.5,,24000,Special Pricing
+25HCB436A003,Carrier,Heat Pump,"Infinity Series 3-Ton Heat Pump with Puron Refrigerant",3450.00,3,16,9.5,,36000,Special Pricing  
+25HCB448A003,Carrier,Heat Pump,"Infinity Series 4-Ton Heat Pump with Puron Refrigerant",4150.00,4,16,9.5,,48000,Special Pricing
+25HCC624A003,Carrier,Heat Pump,"Comfort Series 2-Ton Heat Pump",2650.00,2,14,8.5,,24000,Budget Option
+25HCC636A003,Carrier,Heat Pump,"Comfort Series 3-Ton Heat Pump",3250.00,3,14,8.5,,36000,Budget Option
+25HCC648A003,Carrier,Heat Pump,"Comfort Series 4-Ton Heat Pump",3850.00,4,14,8.5,,48000,Budget Option
+58MCA070,Carrier,Gas Furnace,"58MCA 70,000 BTU Gas Furnace 80% AFUE",2495.00,,,,,70000,80% AFUE
+58MCA090,Carrier,Gas Furnace,"58MCA 90,000 BTU Gas Furnace 80% AFUE",2895.00,,,,,90000,80% AFUE
+58MCA110,Carrier,Gas Furnace,"58MCA 110,000 BTU Gas Furnace 80% AFUE",3195.00,,,,,110000,80% AFUE
+59MN7A080,Carrier,Gas Furnace,"Performance Series 80,000 BTU Gas Furnace 96% AFUE",3695.00,,,,96,80000,High Efficiency
+59MN7A100,Carrier,Gas Furnace,"Performance Series 100,000 BTU Gas Furnace 96% AFUE",3995.00,,,,96,100000,High Efficiency
+24ACC324A003,Carrier,Air Conditioner,"Comfort Series 2-Ton Air Conditioner 13 SEER",2195.00,2,13,,,24000,Entry Level
+24ACC336A003,Carrier,Air Conditioner,"Comfort Series 3-Ton Air Conditioner 13 SEER",2695.00,3,13,,,36000,Entry Level
+24ACC348A003,Carrier,Air Conditioner,"Comfort Series 4-Ton Air Conditioner 13 SEER",3195.00,4,13,,,48000,Entry Level
+24ABC624A003,Carrier,Air Conditioner,"Infinity Series 2-Ton Air Conditioner 16 SEER",3295.00,2,16,,,24000,Premium
+24ABC636A003,Carrier,Air Conditioner,"Infinity Series 3-Ton Air Conditioner 16 SEER",3895.00,3,16,,,36000,Premium
+24ABC648A003,Carrier,Air Conditioner,"Infinity Series 4-Ton Air Conditioner 16 SEER",4495.00,4,16,,,48000,Premium
+CNPVP2417ALA,Carrier,Evaporator Coil,"N-Coil Cased Evaporator Coil 2-Ton",645.00,2,,,,,Aluminum Construction
+CNPVP3617ALA,Carrier,Evaporator Coil,"N-Coil Cased Evaporator Coil 3-Ton",745.00,3,,,,,Aluminum Construction
+CNPVP4817ALA,Carrier,Evaporator Coil,"N-Coil Cased Evaporator Coil 4-Ton",845.00,4,,,,,Aluminum Construction
+FB4ANF036,Carrier,Air Handler,"Fan Coil Unit with Electric Heat 3-Ton",1395.00,3,,,,,Multi-Position
+FB4ANF048,Carrier,Air Handler,"Fan Coil Unit with Electric Heat 4-Ton",1595.00,4,,,,,Multi-Position
+SYSTXCCUID01,Carrier,Thermostat,"Infinity System Control Thermostat",625.00,,,,,,WiFi Enabled
+TP-PAC01,Carrier,Thermostat,"Programmable Thermostat",185.00,,,,,,7-Day Programming

@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from 'electron';
+import { app, BrowserWindow, shell } from 'electron';
 import * as path from 'path';
 import { getDatabaseService } from './database';
 import { registerAllIpcHandlers } from './ipc';
@@ -126,11 +126,49 @@ app.on('window-all-closed', async () => {
   }
 });
 
-// Security: Prevent new window creation
+// Security: Handle new window creation
 app.on('web-contents-created', (_, contents) => {
   logger.debug('app', 'Web contents created, setting security handlers');
+  
+  // Handle navigation to external URLs
+  contents.on('will-navigate', (event, url) => {
+    // Allow navigation within the app
+    if (url.startsWith('file://')) {
+      return;
+    }
+    
+    // Prevent navigation and open in external browser
+    event.preventDefault();
+    shell.openExternal(url);
+    logger.info('app', 'Opening external URL in browser', { url });
+  });
+  
+  // Handle new window requests
   contents.setWindowOpenHandler((details) => {
-    logger.warn('app', 'Window open request denied for security', { url: details.url });
+    // List of trusted domains
+    const trustedDomains = [
+      'platform.openai.com',
+      'openai.com',
+      'github.com',
+      'docs.openai.com'
+    ];
+    
+    try {
+      const url = new URL(details.url);
+      
+      // Check if the domain is trusted
+      if (trustedDomains.some(domain => url.hostname === domain || url.hostname.endsWith(`.${domain}`))) {
+        // Open in external browser
+        shell.openExternal(details.url);
+        logger.info('app', 'Opening trusted URL in external browser', { url: details.url });
+      } else {
+        logger.warn('app', 'Window open request denied for security', { url: details.url });
+      }
+    } catch (error) {
+      logger.error('app', 'Error parsing URL', error as Error, { url: details.url });
+    }
+    
+    // Always deny creating new windows within the app
     return { action: 'deny' };
   });
 });

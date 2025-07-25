@@ -79,6 +79,11 @@ export interface ElectronAPI {
     getPath: (name: string) => Promise<IpcResponse<string>>;
     restart: () => Promise<IpcResponse<boolean>>;
   };
+
+  // External operations
+  external: {
+    openUrl: (url: string) => Promise<IpcResponse<boolean>>;
+  };
 }
 
 // Create the API object
@@ -158,6 +163,11 @@ const electronAPI: ElectronAPI = {
     getVersion: () => ipcRenderer.invoke('app:getVersion'),
     getPath: (name: string) => ipcRenderer.invoke('app:getPath', name),
     restart: () => ipcRenderer.invoke('app:restart'),
+  },
+
+  // External operations
+  external: {
+    openUrl: (url: string) => ipcRenderer.invoke('external:open-url', url),
   },
 };
 

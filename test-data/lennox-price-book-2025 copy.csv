@@ -1,0 +1,41 @@
+SKU,Model,Brand,Type,Description,MSRP,Tonnage,SEER,EER,HSPF,AFUE,Category
+ML195UH070XE36B,ML195UH,Lennox,Furnace,"Merit Series, Ultra-Low Emissions Gas Furnace, 95% AFUE, 70,000 BTU",2895.00,,,,,95,Heating
+ML195UH090XE48C,ML195UH,Lennox,Furnace,"Merit Series, Ultra-Low Emissions Gas Furnace, 95% AFUE, 90,000 BTU",3195.00,,,,,95,Heating
+ML195UH110XE60C,ML195UH,Lennox,Furnace,"Merit Series, Ultra-Low Emissions Gas Furnace, 95% AFUE, 110,000 BTU",3495.00,,,,,95,Heating
+SL280UH070XV36B,SL280UH,Lennox,Furnace,"Signature Series, Two-Stage Gas Furnace, 80% AFUE, 70,000 BTU",3695.00,,,,,80,Heating
+SL280UH090XV48B,SL280UH,Lennox,Furnace,"Signature Series, Two-Stage Gas Furnace, 80% AFUE, 90,000 BTU",3995.00,,,,,80,Heating
+EL296UH070XV36B,EL296UH,Lennox,Furnace,"Elite Series, High-Efficiency Two-Stage Gas Furnace, 96% AFUE, 70,000 BTU",4295.00,,,,,96,Heating
+EL296UH090XV48C,EL296UH,Lennox,Furnace,"Elite Series, High-Efficiency Two-Stage Gas Furnace, 96% AFUE, 90,000 BTU",4595.00,,,,,96,Heating
+SLP99UH070XV36B,SLP99UH,Lennox,Furnace,"Signature Series, Variable-Capacity Gas Furnace, 99% AFUE, 70,000 BTU",5995.00,,,,,99,Heating
+SLP99UH090XV48C,SLP99UH,Lennox,Furnace,"Signature Series, Variable-Capacity Gas Furnace, 99% AFUE, 90,000 BTU",6495.00,,,,,99,Heating
+ML14XC1-024-230,ML14XC1,Lennox,Air Conditioner,"Merit Series, Single-Stage Air Conditioner, 14 SEER, 2 Ton",2195.00,2,14,11.2,,,Cooling
+ML14XC1-036-230,ML14XC1,Lennox,Air Conditioner,"Merit Series, Single-Stage Air Conditioner, 14 SEER, 3 Ton",2795.00,3,14,11.2,,,Cooling
+ML14XC1-048-230,ML14XC1,Lennox,Air Conditioner,"Merit Series, Single-Stage Air Conditioner, 14 SEER, 4 Ton",3395.00,4,14,11.2,,,Cooling
+ML14XC1-060-230,ML14XC1,Lennox,Air Conditioner,"Merit Series, Single-Stage Air Conditioner, 14 SEER, 5 Ton",3995.00,5,14,11.2,,,Cooling
+EL16XC1-024-230,EL16XC1,Lennox,Air Conditioner,"Elite Series, Single-Stage Air Conditioner, 16 SEER, 2 Ton",3295.00,2,16,13,,,Cooling
+EL16XC1-036-230,EL16XC1,Lennox,Air Conditioner,"Elite Series, Single-Stage Air Conditioner, 16 SEER, 3 Ton",3895.00,3,16,13,,,Cooling
+EL16XC1-048-230,EL16XC1,Lennox,Air Conditioner,"Elite Series, Single-Stage Air Conditioner, 16 SEER, 4 Ton",4495.00,4,16,13,,,Cooling
+XC21-024-230,XC21,Lennox,Air Conditioner,"Signature Series, Two-Stage Air Conditioner, 21 SEER, 2 Ton",5195.00,2,21,13,,,Cooling
+XC21-036-230,XC21,Lennox,Air Conditioner,"Signature Series, Two-Stage Air Conditioner, 21 SEER, 3 Ton",5995.00,3,21,13,,,Cooling
+XC21-048-230,XC21,Lennox,Air Conditioner,"Signature Series, Two-Stage Air Conditioner, 21 SEER, 4 Ton",6795.00,4,21,13,,,Cooling
+ML17XP1-024-230,ML17XP1,Lennox,Heat Pump,"Merit Series, Single-Stage Heat Pump, 17 SEER, 2 Ton",3095.00,2,17,13,9.5,,Heating/Cooling
+ML17XP1-036-230,ML17XP1,Lennox,Heat Pump,"Merit Series, Single-Stage Heat Pump, 17 SEER, 3 Ton",3795.00,3,17,13,9.5,,Heating/Cooling
+ML17XP1-048-230,ML17XP1,Lennox,Heat Pump,"Merit Series, Single-Stage Heat Pump, 17 SEER, 4 Ton",4495.00,4,17,13,9.5,,Heating/Cooling
+EL22XPV-024-230,EL22XPV,Lennox,Heat Pump,"Elite Series, Variable-Capacity Heat Pump, 22 SEER, 2 Ton",5495.00,2,22,14,10.5,,Heating/Cooling
+EL22XPV-036-230,EL22XPV,Lennox,Heat Pump,"Elite Series, Variable-Capacity Heat Pump, 22 SEER, 3 Ton",6295.00,3,22,14,10.5,,Heating/Cooling
+EL22XPV-048-230,EL22XPV,Lennox,Heat Pump,"Elite Series, Variable-Capacity Heat Pump, 22 SEER, 4 Ton",7095.00,4,22,14,10.5,,Heating/Cooling
+XP25-024-230,XP25,Lennox,Heat Pump,"Signature Series, Variable-Capacity Heat Pump, 23.5 SEER, 2 Ton",7295.00,2,23.5,16,11,,Heating/Cooling
+XP25-036-230,XP25,Lennox,Heat Pump,"Signature Series, Variable-Capacity Heat Pump, 23.5 SEER, 3 Ton",8195.00,3,23.5,16,11,,Heating/Cooling
+XP25-048-230,XP25,Lennox,Heat Pump,"Signature Series, Variable-Capacity Heat Pump, 23.5 SEER, 4 Ton",9095.00,4,23.5,16,11,,Heating/Cooling
+CX35-24,CX35,Lennox,Evaporator Coil,"Cased Aluminum Evaporator Coil, 2 Ton",695.00,2,,,,,Accessories
+CX35-36,CX35,Lennox,Evaporator Coil,"Cased Aluminum Evaporator Coil, 3 Ton",795.00,3,,,,,Accessories
+CX35-48,CX35,Lennox,Evaporator Coil,"Cased Aluminum Evaporator Coil, 4 Ton",895.00,4,,,,,Accessories
+CX35-60,CX35,Lennox,Evaporator Coil,"Cased Aluminum Evaporator Coil, 5 Ton",995.00,5,,,,,Accessories
+CB31M-41,CB31M,Lennox,Air Handler,"Multi-Position Air Handler with Internal TXV, 3.5 Ton",1295.00,3.5,,,,,Accessories
+CB31M-51,CB31M,Lennox,Air Handler,"Multi-Position Air Handler with Internal TXV, 4 Ton",1495.00,4,,,,,Accessories
+CB31M-65,CB31M,Lennox,Air Handler,"Multi-Position Air Handler with Internal TXV, 5 Ton",1695.00,5,,,,,Accessories
+PureAir-S,PureAir S,Lennox,Air Purifier,"Whole-Home Air Purification System",1295.00,,,,,,Accessories
+HRV3-150,Healthy Climate HRV3,Lennox,Ventilator,"Heat Recovery Ventilator, 150 CFM",1895.00,,,,,,Accessories
+iComfort-S30,iComfort S30,Lennox,Thermostat,"Smart Thermostat with Built-In WiFi",495.00,,,,,,Controls
+iComfort-E30,iComfort E30,Lennox,Thermostat,"Universal Smart Thermostat with WiFi",395.00,,,,,,Controls
+ComfortSense-7500,ComfortSense 7500,Lennox,Thermostat,"Programmable Thermostat, 7-Day",195.00,,,,,,Controls

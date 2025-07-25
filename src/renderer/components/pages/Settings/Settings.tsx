@@ -313,7 +313,14 @@ export const Settings: React.FC = () => {
             
             <p className="form-help">
               Required for AI-powered SKU matching. Get your API key from{' '}
-              <a href="https://platform.openai.com/account/api-keys" target="_blank" rel="noopener noreferrer">
+              <a 
+                href="https://platform.openai.com/account/api-keys" 
+                onClick={(e) => {
+                  e.preventDefault();
+                  window.electronAPI.external.openUrl('https://platform.openai.com/account/api-keys');
+                }}
+                style={{ cursor: 'pointer', color: '#007bff', textDecoration: 'underline' }}
+              >
                 OpenAI Platform
               </a>
             </p>
