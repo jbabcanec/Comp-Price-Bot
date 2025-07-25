@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { IconComponent } from '../../shared/IconComponent';
 import './Dashboard.css';
 
@@ -6,7 +6,66 @@ interface DashboardProps {
   onNavigate?: (pageId: string) => void;
 }
 
+interface OpenAIStatus {
+  hasKey: boolean;
+  isValid: boolean;
+  isChecking: boolean;
+}
+
 export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
+  const [openAIStatus, setOpenAIStatus] = useState<OpenAIStatus>({
+    hasKey: false,
+    isValid: false,
+    isChecking: true
+  });
+
+  useEffect(() => {
+    checkOpenAIStatus();
+  }, []);
+
+  const checkOpenAIStatus = async () => {
+    try {
+      setOpenAIStatus(prev => ({ ...prev, isChecking: true }));
+      
+      // Check if API key exists
+      const hasKey = await window.electronAPI.apiKey.hasOpenAI();
+      
+      if (hasKey) {
+        // Validate the stored key
+        const validationResult = await window.electronAPI.apiKey.validateOpenAI();
+        setOpenAIStatus({
+          hasKey: true,
+          isValid: validationResult.valid,
+          isChecking: false
+        });
+      } else {
+        setOpenAIStatus({
+          hasKey: false,
+          isValid: false,
+          isChecking: false
+        });
+      }
+    } catch (error) {
+      console.error('Failed to check OpenAI status:', error);
+      setOpenAIStatus({
+        hasKey: false,
+        isValid: false,
+        isChecking: false
+      });
+    }
+  };
+
+  const getOpenAIStatusClass = () => {
+    if (openAIStatus.isChecking) return 'pending';
+    if (!openAIStatus.hasKey) return 'pending';
+    return openAIStatus.isValid ? 'online' : 'offline';
+  };
+
+  const getOpenAIStatusText = () => {
+    if (openAIStatus.isChecking) return 'Checking...';
+    if (!openAIStatus.hasKey) return 'Not Configured';
+    return openAIStatus.isValid ? 'Connected' : 'Invalid Key';
+  };
   return (
     <div className="dashboard-page">
       <div className="page-header">
@@ -106,10 +165,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               <span className="status-label">Database</span>
               <span className="status-value">Connected</span>
             </div>
-            <div className="status-item pending">
+            <div className={`status-item ${getOpenAIStatusClass()}`}>
               <span className="status-dot"></span>
               <span className="status-label">OpenAI API</span>
-              <span className="status-value">Not Configured</span>
+              <span className="status-value">{getOpenAIStatusText()}</span>
             </div>
             <div className="status-item online">
               <span className="status-dot"></span>

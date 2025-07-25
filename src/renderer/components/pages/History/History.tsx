@@ -176,7 +176,7 @@ export const History: React.FC = () => {
           <div className="empty-state">
             <div className="empty-state-icon">
               <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
-                <path d="M9 11H7a2 2 0 000 4h2m4-4h2a2 2 0 010 4h-2m-4-4v4m0-4L9 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </div>
             <h3>No Processing History</h3>

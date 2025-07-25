@@ -34,7 +34,11 @@ export const IconComponent: React.FC<IconComponentProps> = ({
       refresh: "M23 4v6h-6M1 20v-6h6M20.49 9A9 9 0 005.64 5.64L1 10m22 4a9 9 0 01-14.85 3.36L23 14",
       search: "M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z",
       filter: "M22 3H2l8 9.46V19l4 2v-8.54L22 3z",
-      download: "M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"
+      download: "M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3",
+      
+      // History and timeline icons
+      history: "M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z",
+      list: "M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"
     };
     return icons[iconName] || icons.chart;
   };

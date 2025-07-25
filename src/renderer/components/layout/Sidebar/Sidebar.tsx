@@ -20,7 +20,7 @@ const sidebarItems: SidebarItem[] = [
   { id: 'products', label: 'Our Files', icon: 'folder' },
   { id: 'upload', label: 'Competitor Data', icon: 'upload' },
   { id: 'database', label: 'SKU Database', icon: 'database' },
-  { id: 'history', label: 'History', icon: 'clock' },
+  { id: 'history', label: 'History', icon: 'history' },
   { id: 'settings', label: 'Settings', icon: 'settings' },
 ];
 
