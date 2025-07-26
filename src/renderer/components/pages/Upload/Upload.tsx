@@ -7,16 +7,27 @@ interface UploadedFile {
   name: string;
   size: number;
   type: string;
-  status: 'pending' | 'processing' | 'completed' | 'error';
+  status: 'pending' | 'processing' | 'completed' | 'error' | 'matching';
   progress?: number;
   extractedData?: any[];
   error?: string;
+  matchingResults?: MatchingResults;
+}
+
+interface MatchingResults {
+  matched: number;
+  noMatch: number;
+  highConfidence: number;
+  mediumConfidence: number;
+  lowConfidence: number;
+  processingTime: number;
 }
 
 export const Upload: React.FC = () => {
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const uploadedFilesSectionRef = useRef<HTMLDivElement>(null);
 
   const supportedFormats = {
     'Spreadsheets': ['.xlsx', '.xls', '.csv', '.ods'],
@@ -98,6 +109,16 @@ export const Upload: React.FC = () => {
     };
     
     setUploadedFiles(prev => [...prev, uploadedFile]);
+    
+    // Auto-scroll to uploaded files section after a short delay
+    setTimeout(() => {
+      if (uploadedFilesSectionRef.current) {
+        uploadedFilesSectionRef.current.scrollIntoView({ 
+          behavior: 'smooth',
+          block: 'start'
+        });
+      }
+    }, 100);
     
     try {
       // Save file temporarily for processing
@@ -254,6 +275,82 @@ export const Upload: React.FC = () => {
   const clearAll = () => {
     setUploadedFiles([]);
   };
+
+  const startCrosswalkMatching = async (fileId: string, extractedData: any[]) => {
+    try {
+      // Set file status to matching
+      setUploadedFiles(prev => prev.map(f => 
+        f.id === fileId ? { ...f, status: 'matching' } : f
+      ));
+
+      const electronAPI = (window as any).electronAPI;
+      
+      // Debug logging
+      console.log('=== CROSSWALK DEBUGGING ===');
+      console.log('electronAPI available:', !!electronAPI);
+      console.log('electronAPI.crosswalk available:', !!electronAPI?.crosswalk);
+      console.log('electronAPI.crosswalk.match available:', !!electronAPI?.crosswalk?.match);
+      console.log('electronAPI keys:', electronAPI ? Object.keys(electronAPI) : 'no electronAPI');
+      if (electronAPI?.crosswalk) {
+        console.log('crosswalk keys:', Object.keys(electronAPI.crosswalk));
+      }
+      console.log('========================');
+      
+      // Convert extracted data to competitor products format
+      const competitorProducts = extractedData.map(item => ({
+        sku: item.sku || '',
+        company: item.company || '',
+        price: item.price,
+        model: item.model,
+        description: item.description,
+        source: 'file_upload'
+      }));
+
+      console.log('Starting crosswalk matching for:', competitorProducts);
+      
+      // Call the crosswalk matching IPC handler
+      const result = await electronAPI.crosswalk.match(competitorProducts);
+      
+      if (result.success) {
+        // Update file with matching results
+        setUploadedFiles(prev => prev.map(f => 
+          f.id === fileId ? { 
+            ...f, 
+            status: 'completed',
+            matchingResults: {
+              matched: result.stats.matched,
+              noMatch: result.stats.noMatch,
+              highConfidence: result.stats.highConfidence,
+              mediumConfidence: result.stats.mediumConfidence,
+              lowConfidence: result.stats.lowConfidence,
+              processingTime: result.processingTime
+            }
+          } : f
+        ));
+        
+        alert(`Crosswalk matching completed!\n\n` +
+              `✅ Matched: ${result.stats.matched}\n` +
+              `❌ No match: ${result.stats.noMatch}\n` +
+              `🎯 High confidence: ${result.stats.highConfidence}\n` +
+              `🔍 Medium confidence: ${result.stats.mediumConfidence}\n` +
+              `⚠️ Low confidence: ${result.stats.lowConfidence}\n\n` +
+              `Processing time: ${(result.processingTime / 1000).toFixed(1)}s\n\n` +
+              `Results saved to database and history.`);
+      } else {
+        throw new Error(result.error || 'Matching failed');
+      }
+      
+    } catch (error) {
+      console.error('Crosswalk matching failed:', error);
+      
+      // Set file status back to completed with error
+      setUploadedFiles(prev => prev.map(f => 
+        f.id === fileId ? { ...f, status: 'error', error: error instanceof Error ? error.message : 'Matching failed' } : f
+      ));
+      
+      alert(`Crosswalk matching failed: ${error instanceof Error ? error.message : 'Unknown error'}\n\nPlease check your settings and try again.`);
+    }
+  };
   return (
     <div className="upload-page">
       <div className="page-header">
@@ -315,7 +412,7 @@ export const Upload: React.FC = () => {
         </div>
 
         {uploadedFiles.length > 0 && (
-          <div className="uploaded-files-section">
+          <div className="uploaded-files-section" ref={uploadedFilesSectionRef}>
             <div className="section-header">
               <h3>Uploaded Files ({uploadedFiles.length})</h3>
               <button className="btn btn-secondary" onClick={clearAll}>
@@ -349,7 +446,14 @@ export const Upload: React.FC = () => {
                       </div>
                     )}
                     
-                    {file.status === 'completed' && file.extractedData && (
+                    {file.status === 'matching' && (
+                      <div className="matching-progress">
+                        <div className="spinner"></div>
+                        <span>Running crosswalk matching...</span>
+                      </div>
+                    )}
+                    
+                    {file.status === 'completed' && file.extractedData && !file.matchingResults && (
                       <div className="extracted-data">
                         <h5>Extracted Data ({file.extractedData.length} items):</h5>
                         <div className="data-preview">
@@ -364,9 +468,31 @@ export const Upload: React.FC = () => {
                             </div>
                           )}
                         </div>
-                        <button className="btn btn-primary btn-sm">
+                        <button 
+                          className="btn btn-primary btn-sm"
+                          onClick={() => startCrosswalkMatching(file.id, file.extractedData || [])}
+                        >
                           Start Crosswalk Matching
                         </button>
+                      </div>
+                    )}
+                    
+                    {file.status === 'completed' && file.matchingResults && (
+                      <div className="matching-results">
+                        <h5>🎯 Crosswalk Matching Complete!</h5>
+                        <div className="results-summary">
+                          <div className="result-item success">✅ Matched: {file.matchingResults.matched}</div>
+                          <div className="result-item error">❌ No match: {file.matchingResults.noMatch}</div>
+                          <div className="result-item high">🎯 High confidence: {file.matchingResults.highConfidence}</div>
+                          <div className="result-item medium">🔍 Medium confidence: {file.matchingResults.mediumConfidence}</div>
+                          <div className="result-item low">⚠️ Low confidence: {file.matchingResults.lowConfidence}</div>
+                        </div>
+                        <div className="processing-time">
+                          Processing time: {(file.matchingResults.processingTime / 1000).toFixed(1)}s
+                        </div>
+                        <div className="results-note">
+                          ✅ Results saved to database and history
+                        </div>
                       </div>
                     )}
                     

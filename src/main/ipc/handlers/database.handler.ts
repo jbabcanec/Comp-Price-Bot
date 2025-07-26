@@ -91,9 +91,28 @@ export function registerDatabaseHandlers(): void {
     }
   });
 
-  ipcMain.handle(IPC_CHANNELS.DB_PRODUCTS_BULK_CREATE, async (_, products: ProductCreateInput[]) => {
+  ipcMain.handle(IPC_CHANNELS.DB_PRODUCTS_BULK_CREATE, async (_, products: any[]) => {
     try {
-      const result = await dbService.products.bulkCreate(products);
+      // Convert UniversalProduct format to ProductCreateInput format
+      const convertedProducts: ProductCreateInput[] = products.map(product => ({
+        sku: product.sku,
+        model: product.model,
+        brand: product.brand,
+        type: product.primaryType || product.type, // Handle both UniversalProduct (primaryType) and ProductCreateInput (type)
+        tonnage: product.tonnage,
+        seer: product.seer,
+        seer2: product.seer2,
+        afue: product.afue,
+        hspf: product.hspf,
+        refrigerant: product.refrigerant,
+        stage: product.stage,
+        description: product.description,
+        msrp: product.msrp,
+        category: product.category,
+        subcategory: product.subcategory
+      }));
+      
+      const result = await dbService.products.bulkCreate(convertedProducts);
       return { success: true, data: result };
     } catch (error) {
       console.error('IPC Error - Products BulkCreate:', error);

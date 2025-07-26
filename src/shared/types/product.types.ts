@@ -3,7 +3,7 @@
  * Updated for Phase 2: Product Management implementation
  */
 
-export type ProductType = 'air_conditioner' | 'heat_pump' | 'furnace' | 'coil' | 'other';
+export type ProductType = 'AC' | 'Heat Pump' | 'Furnace' | 'Air Handler';
 export type StageType = 'single' | 'two-stage' | 'variable';
 
 /**

@@ -15,7 +15,7 @@ interface ImportedProduct {
   sku: string;
   model: string;
   brand: string;
-  type: 'air_conditioner' | 'heat_pump' | 'furnace' | 'coil' | 'other';
+  type: 'AC' | 'Heat Pump' | 'Furnace' | 'Air Handler';
   tonnage?: number;
   seer?: number;
   seer2?: number;
@@ -543,8 +543,8 @@ export const Products: React.FC = () => {
                           <td>{product.brand}</td>
                           <td>{product.model}</td>
                           <td>
-                            <span className={`type-badge type-${product.type}`}>
-                              {product.type.replace('_', ' ')}
+                            <span className={`type-badge type-${product.type.toLowerCase().replace(' ', '-')}`}>
+                              {product.type}
                             </span>
                           </td>
                           <td className="specs-cell">

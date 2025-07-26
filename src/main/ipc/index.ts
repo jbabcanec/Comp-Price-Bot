@@ -6,6 +6,7 @@ import { setupApiKeyHandlers } from './handlers/apiKey.handler';
 import { registerHistoryHandlers } from './handlers/history.handler';
 import { setupLogsHandlers } from './handlers/logs.handler';
 import { registerExternalHandlers } from './handlers/external.handler';
+import { registerCrosswalkHandlers } from './handlers/crosswalk.handler';
 
 /**
  * Register all IPC handlers for the application
@@ -23,6 +24,7 @@ export function registerAllIpcHandlers(): void {
   registerHistoryHandlers();
   setupLogsHandlers();
   registerExternalHandlers();
+  registerCrosswalkHandlers();
   
   console.log('All IPC handlers registered successfully');
 }

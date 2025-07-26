@@ -2,6 +2,7 @@ import { DatabaseConnection, getDatabase } from './connection';
 import { DatabaseMigrator } from './migrations/migrator';
 import { ProductsRepository } from './repositories/products.repo';
 import { MappingsRepository } from './repositories/mappings.repo';
+import { HistoryRepository } from './repositories/history.repo';
 import { logger } from '../services/logger.service';
 
 export class DatabaseService {
@@ -11,6 +12,7 @@ export class DatabaseService {
   // Repository instances
   public products: ProductsRepository;
   public mappings: MappingsRepository;
+  public history: HistoryRepository;
 
   constructor() {
     logger.debug('database', 'Creating DatabaseService instance');
@@ -20,6 +22,7 @@ export class DatabaseService {
     // Initialize repositories
     this.products = new ProductsRepository(this.db);
     this.mappings = new MappingsRepository(this.db);
+    this.history = new HistoryRepository(this.db);
     logger.debug('database', 'DatabaseService repositories initialized');
   }
 

@@ -84,6 +84,13 @@ export interface ElectronAPI {
   external: {
     openUrl: (url: string) => Promise<IpcResponse<boolean>>;
   };
+
+  // Crosswalk operations
+  crosswalk: {
+    match: (competitorProducts: any[]) => Promise<IpcResponse<any>>;
+    getHistory: () => Promise<IpcResponse<any[]>>;
+    getMatches: () => Promise<IpcResponse<any[]>>;
+  };
 }
 
 // Create the API object
@@ -168,6 +175,13 @@ const electronAPI: ElectronAPI = {
   // External operations
   external: {
     openUrl: (url: string) => ipcRenderer.invoke('external:open-url', url),
+  },
+
+  // Crosswalk operations
+  crosswalk: {
+    match: (competitorProducts: any[]) => ipcRenderer.invoke('crosswalk:match', competitorProducts),
+    getHistory: () => ipcRenderer.invoke('crosswalk:get-history'),
+    getMatches: () => ipcRenderer.invoke('crosswalk:get-matches'),
   },
 };
 

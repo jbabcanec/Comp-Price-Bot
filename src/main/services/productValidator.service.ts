@@ -115,7 +115,7 @@ export class ProductValidatorService {
         sku: universalData.sku || this.generateFallbackSKU(data),
         model: universalData.model || universalData.sku || 'Unknown',
         brand: universalData.brand || this.extractFallbackBrand(data) || 'Unknown',
-        primaryType: universalData.classification.primaryType,
+        primaryType: this.mapToDbType(universalData.classification.primaryType),
         subTypes: universalData.classification.subTypes,
         specifications: this.normalizeSpecifications(universalData.specifications),
         description: universalData.description,
@@ -356,6 +356,46 @@ export class ProductValidatorService {
     }
     
     return normalized;
+  }
+
+  /**
+   * Map flexible primaryType to strict database type
+   */
+  private mapToDbType(primaryType: string): string {
+    const typeMapping: Record<string, string> = {
+      // Air conditioning variations
+      'air-conditioner': 'AC',
+      'air_conditioner': 'AC',
+      'ac': 'AC',
+      'cooling': 'AC',
+      'condenser': 'AC',
+      
+      // Heat pump variations  
+      'heat-pump': 'Heat Pump',
+      'heat_pump': 'Heat Pump',
+      'heatpump': 'Heat Pump',
+      'hp': 'Heat Pump',
+      
+      // Furnace variations
+      'furnace': 'Furnace',
+      'gas-furnace': 'Furnace',
+      'oil-furnace': 'Furnace',
+      'heating': 'Furnace',
+      
+      // Air handler variations
+      'air-handler': 'Air Handler',
+      'air_handler': 'Air Handler',
+      'airhandler': 'Air Handler',
+      'ahu': 'Air Handler',
+      'blower': 'Air Handler',
+      
+      // Default fallback
+      'unknown': 'AC',
+      'other': 'AC'
+    };
+    
+    const normalized = primaryType.toLowerCase().trim();
+    return typeMapping[normalized] || 'AC'; // Default to AC if not found
   }
 
   /**
