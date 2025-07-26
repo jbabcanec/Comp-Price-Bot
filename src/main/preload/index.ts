@@ -40,6 +40,13 @@ export interface ElectronAPI {
       verify: (id: number, verifiedBy: string) => Promise<IpcResponse<any>>;
       getStats: () => Promise<IpcResponse<any>>;
     };
+    competitorData: {
+      create: (data: any) => Promise<IpcResponse<any>>;
+      findAll: (filters?: any) => Promise<IpcResponse<any[]>>;
+      bulkCreate: (dataList: any[]) => Promise<IpcResponse<number>>;
+      getCompanies: () => Promise<IpcResponse<string[]>>;
+      delete: (id: number) => Promise<IpcResponse<boolean>>;
+    };
   };
 
   // Settings operations
@@ -131,6 +138,13 @@ const electronAPI: ElectronAPI = {
       delete: (id: number) => ipcRenderer.invoke('db:mappings:delete', id),
       verify: (id: number, verifiedBy: string) => ipcRenderer.invoke('db:mappings:verify', id, verifiedBy),
       getStats: () => ipcRenderer.invoke('db:mappings:getStats'),
+    },
+    competitorData: {
+      create: (data: any) => ipcRenderer.invoke('db:competitorData:create', data),
+      findAll: (filters?: any) => ipcRenderer.invoke('db:competitorData:findAll', filters),
+      bulkCreate: (dataList: any[]) => ipcRenderer.invoke('db:competitorData:bulkCreate', dataList),
+      getCompanies: () => ipcRenderer.invoke('db:competitorData:getCompanies'),
+      delete: (id: number) => ipcRenderer.invoke('db:competitorData:delete', id),
     },
   },
 

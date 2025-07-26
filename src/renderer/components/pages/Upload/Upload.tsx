@@ -167,6 +167,25 @@ export const Upload: React.FC = () => {
         price: item.price,
         description: item.description || item.source
       }));
+
+      // Save competitor data to database automatically
+      try {
+        const competitorDataList = extractedData.map((item: any) => ({
+          sku: item.sku || '',
+          company: item.company || 'Unknown',
+          price: item.price,
+          description: item.description,
+          source_file: file.name
+        })).filter((item: any) => item.sku); // Filter out items without SKU
+
+        if (competitorDataList.length > 0) {
+          const dbResult = await electronAPI.database.competitorData.bulkCreate(competitorDataList);
+          console.log(`Saved ${dbResult.data || 0} competitor products to database from ${file.name}`);
+        }
+      } catch (dbError) {
+        console.warn('Failed to save competitor data:', dbError);
+        // Don't fail the whole process if database save fails
+      }
       
       setUploadedFiles(prev => prev.map(f => 
         f.id === fileId 

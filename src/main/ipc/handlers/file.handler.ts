@@ -3,11 +3,67 @@ import { readFile, writeFile } from 'fs/promises';
 import { IPC_CHANNELS } from '../channels';
 import { FileSelectOptions } from '@shared/types/ipc.types';
 import { FileProcessorService } from '../../services/fileProcessor.service';
+import { SuperchargedFileProcessor } from '../../services/superchargedFileProcessor.service';
 import { ProductValidatorService } from '../../services/productValidator.service';
 import { logger } from '../../services/logger.service';
 
-const fileProcessor = new FileProcessorService();
-const productValidator = new ProductValidatorService();
+// Initialize with dynamic OpenAI support  
+let fileProcessor: FileProcessorService;
+let superchargedProcessor: SuperchargedFileProcessor;
+let productValidator: ProductValidatorService;
+
+async function getFileProcessor(): Promise<FileProcessorService> {
+  if (!fileProcessor) {
+    try {
+      // Try to get OpenAI API key from secure storage
+      const { ApiKeyService } = await import('../../services/apiKey.service');
+      const apiKeyService = new ApiKeyService();
+      const openaiKey = await apiKeyService.getOpenAIKey();
+      
+      if (openaiKey) {
+        logger.info('file-ops', 'Initializing FileProcessor with OpenAI support');
+        fileProcessor = new FileProcessorService(openaiKey);
+      } else {
+        logger.info('file-ops', 'Initializing FileProcessor without OpenAI support');
+        fileProcessor = new FileProcessorService();
+      }
+    } catch (error) {
+      logger.warn('file-ops', 'Failed to get OpenAI key, proceeding without AI support', error);
+      fileProcessor = new FileProcessorService();
+    }
+  }
+  return fileProcessor;
+}
+
+async function getSuperchargedProcessor(): Promise<SuperchargedFileProcessor> {
+  if (!superchargedProcessor) {
+    try {
+      // Try to get OpenAI API key from secure storage
+      const { ApiKeyService } = await import('../../services/apiKey.service');
+      const apiKeyService = new ApiKeyService();
+      const openaiKey = await apiKeyService.getOpenAIKey();
+      
+      if (openaiKey) {
+        logger.info('file-ops', 'Initializing Supercharged Processor with full AI capabilities');
+        superchargedProcessor = new SuperchargedFileProcessor(openaiKey);
+      } else {
+        logger.info('file-ops', 'Initializing Supercharged Processor with traditional methods only');
+        superchargedProcessor = new SuperchargedFileProcessor();
+      }
+    } catch (error) {
+      logger.warn('file-ops', 'Failed to initialize Supercharged Processor', error);
+      superchargedProcessor = new SuperchargedFileProcessor();
+    }
+  }
+  return superchargedProcessor;
+}
+
+function getProductValidator(): ProductValidatorService {
+  if (!productValidator) {
+    productValidator = new ProductValidatorService();
+  }
+  return productValidator;
+}
 
 export function registerFileHandlers(): void {
   // File selection dialog
@@ -111,7 +167,8 @@ export function registerFileHandlers(): void {
     logger.app('file-process', 'User initiated file processing', { filePath });
     
     try {
-      const result = await fileProcessor.processFile(filePath);
+      const processor = await getSuperchargedProcessor();
+      const result = await processor.processFileWithFallbacks(filePath);
       
       if (result.success) {
         logger.info('app', 'File processing completed successfully', {
@@ -183,7 +240,8 @@ export function registerFileHandlers(): void {
       
       for (const filePath of filePaths) {
         try {
-          const result = await fileProcessor.processFile(filePath);
+          const processor = await getSuperchargedProcessor();
+      const result = await processor.processFileWithFallbacks(filePath);
           results.push(result);
         } catch (error) {
           console.error(`Error processing ${filePath}:`, error);
@@ -214,7 +272,8 @@ export function registerFileHandlers(): void {
   // Product validation handler
   ipcMain.handle('file:validateProducts', async (_, extractedData) => {
     try {
-      const validationResult = await productValidator.processBulkImport(extractedData);
+      const validator = getProductValidator();
+      const validationResult = await validator.processBulkImport(extractedData);
       return { success: true, data: validationResult };
     } catch (error) {
       console.error('IPC Error - Product Validation:', error);

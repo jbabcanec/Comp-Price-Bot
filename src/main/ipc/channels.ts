@@ -33,6 +33,13 @@ export const IPC_CHANNELS = {
   DB_MAPPINGS_VERIFY: 'db:mappings:verify',
   DB_MAPPINGS_GET_STATS: 'db:mappings:getStats',
   
+  // Database operations - Competitor Data
+  DB_COMPETITOR_DATA_CREATE: 'db:competitorData:create',
+  DB_COMPETITOR_DATA_FIND_ALL: 'db:competitorData:findAll',
+  DB_COMPETITOR_DATA_BULK_CREATE: 'db:competitorData:bulkCreate',
+  DB_COMPETITOR_DATA_GET_COMPANIES: 'db:competitorData:getCompanies',
+  DB_COMPETITOR_DATA_DELETE: 'db:competitorData:delete',
+  
   // Settings operations
   SETTINGS_GET: 'settings:get',
   SETTINGS_SET: 'settings:set',

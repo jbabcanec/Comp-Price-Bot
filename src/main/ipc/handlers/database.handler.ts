@@ -3,6 +3,7 @@ import { getDatabaseService } from '../../database';
 import { IPC_CHANNELS } from '../channels';
 import { ProductCreateInput, ProductUpdateInput } from '@shared/types/product.types';
 import { MappingCreateInput, MappingUpdateInput } from '@shared/types/mapping.types';
+import { CompetitorDataCreateInput } from '../../database/repositories/competitorData.repo';
 
 /**
  * Register all database-related IPC handlers
@@ -234,6 +235,87 @@ export function registerDatabaseHandlers(): void {
         error: { 
           message: error instanceof Error ? error.message : 'Unknown error',
           code: 'MAPPINGS_GET_STATS_ERROR'
+        } 
+      };
+    }
+  });
+
+  // Competitor Data handlers
+  ipcMain.handle(IPC_CHANNELS.DB_COMPETITOR_DATA_CREATE, async (_, data: CompetitorDataCreateInput) => {
+    try {
+      const result = await dbService.competitorData.create(data);
+      return { success: true, data: result };
+    } catch (error) {
+      console.error('IPC Error - Competitor Data Create:', error);
+      return { 
+        success: false, 
+        error: { 
+          message: error instanceof Error ? error.message : 'Unknown error',
+          code: 'COMPETITOR_DATA_CREATE_ERROR'
+        } 
+      };
+    }
+  });
+
+  ipcMain.handle(IPC_CHANNELS.DB_COMPETITOR_DATA_FIND_ALL, async (_, filters?: any) => {
+    try {
+      const result = await dbService.competitorData.findAll(filters);
+      return { success: true, data: result };
+    } catch (error) {
+      console.error('IPC Error - Competitor Data FindAll:', error);
+      return { 
+        success: false, 
+        error: { 
+          message: error instanceof Error ? error.message : 'Unknown error',
+          code: 'COMPETITOR_DATA_FIND_ALL_ERROR'
+        } 
+      };
+    }
+  });
+
+  ipcMain.handle(IPC_CHANNELS.DB_COMPETITOR_DATA_BULK_CREATE, async (_, dataList: CompetitorDataCreateInput[]) => {
+    try {
+      const result = await dbService.competitorData.bulkCreate(dataList);
+      return { success: true, data: result };
+    } catch (error) {
+      console.error('IPC Error - Competitor Data BulkCreate:', error);
+      return { 
+        success: false, 
+        error: { 
+          message: error instanceof Error ? error.message : 'Unknown error',
+          code: 'COMPETITOR_DATA_BULK_CREATE_ERROR'
+        } 
+      };
+    }
+  });
+
+  ipcMain.handle(IPC_CHANNELS.DB_COMPETITOR_DATA_GET_COMPANIES, async () => {
+    try {
+      const result = await dbService.competitorData.getCompaniesList();
+      return { success: true, data: result };
+    } catch (error) {
+      console.error('IPC Error - Competitor Data GetCompanies:', error);
+      return { 
+        success: false, 
+        error: { 
+          message: error instanceof Error ? error.message : 'Unknown error',
+          code: 'COMPETITOR_DATA_GET_COMPANIES_ERROR'
+        } 
+      };
+    }
+  });
+
+  ipcMain.handle(IPC_CHANNELS.DB_COMPETITOR_DATA_DELETE, async (_, id: number) => {
+    try {
+      const result = await dbService.competitorData.delete(id);
+      return { success: true, data: result };
+    } catch (error) {
+      console.error('IPC Error - Competitor Data Delete:', error);
+      return { 
+        success: false, 
+        error: { 
+          message: error instanceof Error ? error.message : 'Unknown error',
+          code: 'COMPETITOR_DATA_DELETE_ERROR'
         } 
       };
     }
