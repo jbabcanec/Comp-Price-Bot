@@ -49,7 +49,11 @@ interface ImportSummary {
 type ViewMode = 'import' | 'table';
 
 export const Products: React.FC = () => {
-  const [viewMode, setViewMode] = useState<ViewMode>('import');
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    // Restore view mode from localStorage, default to import if no products exist
+    const savedViewMode = localStorage.getItem('priceBookViewMode') as ViewMode;
+    return savedViewMode || 'import';
+  });
   const [selectedDirectory, setSelectedDirectory] = useState<string>(() => {
     // Restore directory from localStorage on component mount
     return localStorage.getItem('selectedPriceBookDirectory') || '';
@@ -204,11 +208,12 @@ export const Products: React.FC = () => {
           // Refresh the product list
           await loadExistingProducts();
           setViewMode('table');
+          localStorage.setItem('priceBookViewMode', 'table');
         }
       }
 
       // Show results summary
-      alert(`Import complete!\nTotal processed: ${summary.totalProcessed}\nValid products: ${summary.validProducts}\nInvalid products: ${summary.invalidProducts}\nDuplicates: ${summary.duplicateSkus}\nWarnings: ${summary.warnings}`);
+      alert(`Import complete!\n\nTotal processed: ${summary.totalProcessed}\nValid products: ${summary.validProducts}\nInvalid products: ${summary.invalidProducts}\nDuplicates: ${summary.duplicateSkus}\nWarnings: ${summary.warnings}\n\n✅ Products have been saved to your price book.\n📊 You can now view your products in the "View Price Book" tab.`);
       
     } catch (error) {
       console.error('Import processing failed:', error);
@@ -321,13 +326,19 @@ export const Products: React.FC = () => {
       <div className="page-actions">
         <button 
           className={`btn ${viewMode === 'import' ? 'btn-primary' : 'btn-secondary'}`} 
-          onClick={() => setViewMode('import')}
+          onClick={() => {
+            setViewMode('import');
+            localStorage.setItem('priceBookViewMode', 'import');
+          }}
         >
           Load Price Book
         </button>
         <button 
           className={`btn ${viewMode === 'table' ? 'btn-primary' : 'btn-secondary'}`} 
-          onClick={() => setViewMode('table')}
+          onClick={() => {
+            setViewMode('table');
+            localStorage.setItem('priceBookViewMode', 'table');
+          }}
           disabled={importedProducts.length === 0}
         >
           View Price Book ({importedProducts.length})
