@@ -49,6 +49,26 @@ export interface AnalyticsData {
 export class HistoryRepository {
   constructor(private db: DatabaseConnection) {}
 
+  async findByFileHash(fileHash: string): Promise<ProcessingHistoryRecord | null> {
+    const sql = `
+      SELECT 
+        id, file_name as fileName, file_hash as fileHash, 
+        company_name as companyName, total_items as totalItems,
+        matched_items as matchedItems, unmatched_items as unmatchedItems,
+        average_confidence as averageConfidence, processing_time_ms as processingTimeMs,
+        exact_matches as exactMatches, fuzzy_matches as fuzzyMatches,
+        spec_matches as specMatches, ai_matches as aiMatches,
+        review_required as reviewRequired, file_size as fileSize,
+        processed_at as processedAt
+      FROM processing_history 
+      WHERE file_hash = ?
+      LIMIT 1
+    `;
+
+    const result = await this.db.get<ProcessingHistoryRecord>(sql, [fileHash]);
+    return result || null;
+  }
+
   async createHistoryRecord(record: Omit<ProcessingHistoryRecord, 'id' | 'processedAt'>): Promise<number> {
     const sql = `
       INSERT INTO processing_history (

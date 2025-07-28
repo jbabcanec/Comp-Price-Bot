@@ -170,11 +170,19 @@ export class LoggerService {
       this.initialized = true;
 
       // Log initialization success
-      console.log(`[Logger] Initialized - Main logs: ${this.logDir}`);
-      console.log(`[Logger] Initialized - Dev logs: ${this.projectLogDir}`);
+      try {
+        console.log(`[Logger] Initialized - Main logs: ${this.logDir}`);
+        console.log(`[Logger] Initialized - Dev logs: ${this.projectLogDir}`);
+      } catch {
+        // Console might not be available, continue silently
+      }
     } catch (error) {
       // If we can't initialize file logging, at least console logging will work
-      console.error('Failed to initialize logger file system:', error);
+      try {
+        console.error('Failed to initialize logger file system:', error);
+      } catch {
+        // Console might not be available, continue silently
+      }
       this.initialized = true; // Mark as initialized to prevent repeated attempts
     }
   }
@@ -214,29 +222,34 @@ export class LoggerService {
    * Log to console with colors
    */
   private logToConsole(entry: LogEntry): void {
-    const timestamp = entry.timestamp.split('T')[1].split('.')[0];
-    const levelStr = LogLevel[entry.level].padEnd(5);
-    const categoryStr = entry.category.padEnd(12);
+    try {
+      const timestamp = entry.timestamp.split('T')[1].split('.')[0];
+      const levelStr = LogLevel[entry.level].padEnd(5);
+      const categoryStr = entry.category.padEnd(12);
 
-    let color = '';
-    switch (entry.level) {
-      case LogLevel.DEBUG: color = '\x1b[36m'; break; // Cyan
-      case LogLevel.INFO: color = '\x1b[32m'; break;  // Green
-      case LogLevel.WARN: color = '\x1b[33m'; break;  // Yellow
-      case LogLevel.ERROR: color = '\x1b[31m'; break; // Red
-    }
+      let color = '';
+      switch (entry.level) {
+        case LogLevel.DEBUG: color = '\x1b[36m'; break; // Cyan
+        case LogLevel.INFO: color = '\x1b[32m'; break;  // Green
+        case LogLevel.WARN: color = '\x1b[33m'; break;  // Yellow
+        case LogLevel.ERROR: color = '\x1b[31m'; break; // Red
+      }
 
-    const reset = '\x1b[0m';
-    const prefix = `${color}[${timestamp}] ${levelStr} ${categoryStr}${reset}`;
+      const reset = '\x1b[0m';
+      const prefix = `${color}[${timestamp}] ${levelStr} ${categoryStr}${reset}`;
 
-    console.log(`${prefix} ${entry.message}`);
+      console.log(`${prefix} ${entry.message}`);
 
-    if (entry.data) {
-      console.log(`${' '.repeat(35)} Data:`, entry.data);
-    }
+      if (entry.data) {
+        console.log(`${' '.repeat(35)} Data:`, entry.data);
+      }
 
-    if (entry.error) {
-      console.error(`${' '.repeat(35)} Error:`, entry.error);
+      if (entry.error) {
+        console.error(`${' '.repeat(35)} Error:`, entry.error);
+      }
+    } catch (error) {
+      // If console is not available or closed (EIO error), fail silently
+      // The log will still be written to file
     }
   }
 
@@ -277,7 +290,11 @@ export class LoggerService {
 
       fs.appendFileSync(logFile, logLine, 'utf8');
     } catch (error) {
-      console.error(`Failed to write to log file in ${logDir}:`, error);
+      try {
+        console.error(`Failed to write to log file in ${logDir}:`, error);
+      } catch {
+        // Console might not be available, continue silently
+      }
     }
   }
 
@@ -292,7 +309,11 @@ export class LoggerService {
           fs.mkdirSync(this.logDir, { recursive: true });
         }
       } catch (error) {
-        console.error('Failed to create main log directory:', error);
+        try {
+          console.error('Failed to create main log directory:', error);
+        } catch {
+          // Console might not be available, continue silently
+        }
       }
     }
 
@@ -303,7 +324,11 @@ export class LoggerService {
           fs.mkdirSync(this.projectLogDir, { recursive: true });
         }
       } catch (error) {
-        console.error('Failed to create project log directory:', error);
+        try {
+          console.error('Failed to create project log directory:', error);
+        } catch {
+          // Console might not be available, continue silently
+        }
       }
     }
   }
@@ -345,11 +370,19 @@ export class LoggerService {
         try {
           fs.unlinkSync(file.path);
         } catch (error) {
-          console.error(`Failed to delete old log file ${file.name}:`, error);
+          try {
+            console.error(`Failed to delete old log file ${file.name}:`, error);
+          } catch {
+            // Console might not be available, continue silently
+          }
         }
       });
     } catch (error) {
-      console.error(`Failed to cleanup old logs in ${logDir}:`, error);
+      try {
+        console.error(`Failed to cleanup old logs in ${logDir}:`, error);
+      } catch {
+        // Console might not be available, continue silently
+      }
     }
   }
 
@@ -430,7 +463,11 @@ export class LoggerService {
         .map(file => path.join(this.logDir!, file))
         .sort((a, b) => fs.statSync(b).mtime.getTime() - fs.statSync(a).mtime.getTime());
     } catch (error) {
-      console.error('Failed to get log files:', error);
+      try {
+        console.error('Failed to get log files:', error);
+      } catch {
+        // Console might not be available, continue silently
+      }
       return [];
     }
   }
@@ -452,7 +489,11 @@ export class LoggerService {
         .map(file => path.join(this.projectLogDir!, file))
         .sort((a, b) => fs.statSync(b).mtime.getTime() - fs.statSync(a).mtime.getTime());
     } catch (error) {
-      console.error('Failed to get project log files:', error);
+      try {
+        console.error('Failed to get project log files:', error);
+      } catch {
+        // Console might not be available, continue silently
+      }
       return [];
     }
   }
@@ -487,7 +528,11 @@ export class LoggerService {
 
       return entries;
     } catch (error) {
-      console.error('Failed to get recent logs:', error);
+      try {
+        console.error('Failed to get recent logs:', error);
+      } catch {
+        // Console might not be available, continue silently
+      }
       return [];
     }
   }
