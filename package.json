@@ -19,14 +19,7 @@
     "lint": "eslint src tests --ext .ts,.tsx",
     "typecheck": "tsc --noEmit",
     "demo:openai": "ts-node examples/openai-demo.ts",
-    "build:prod": "npm run build && npm run dist",
-    "dist": "electron-builder",
-    "dist:win": "electron-builder --win",
-    "dist:mac": "electron-builder --mac",
-    "dist:linux": "electron-builder --linux",
-    "dist:all": "electron-builder --win --mac --linux",
-    "release": "npm run build:prod && npm run publish",
-    "publish": "electron-builder --publish=always"
+    "package": "npm run build && electron-builder --win"
   },
   "keywords": [
     "hvac",
@@ -123,15 +116,6 @@
       "!**/{appveyor.yml,.travis.yml,circle.yml}",
       "!**/{npm-debug.log,yarn.lock,.yarn-integrity,.yarn-metadata.json}"
     ],
-    "extraResources": [
-      {
-        "from": "resources",
-        "to": "resources",
-        "filter": [
-          "**/*"
-        ]
-      }
-    ],
     "win": {
       "target": [
         {
@@ -186,12 +170,6 @@
         }
       ],
       "category": "Office"
-    },
-    "publish": {
-      "provider": "github",
-      "owner": "jbabcanec",
-      "repo": "Comp-Price-Bot",
-      "private": false
     }
   }
 }
