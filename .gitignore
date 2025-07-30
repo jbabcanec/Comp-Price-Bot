@@ -76,4 +76,4 @@ userData/
 pids
 *.pid
 *.seed
-*.pid.lock
+*.pid.lock.env

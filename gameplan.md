@@ -17,6 +17,211 @@ Desktop application that creates SKU crosswalks between YOUR HVAC products and c
 3. **Output**: Crosswalk table showing which competitor SKU = which of your SKUs
 4. **Store**: Save mappings for future use and build knowledge base
 
+## 🏗️ System Architecture & Data Flow
+
+### Complete Processing Pipeline
+
+```mermaid
+graph TD
+    subgraph "1. Price Book Setup (Your Products)"
+        A1[Import Price Book CSV/Excel] --> A2[File Processor Service]
+        A2 --> A3[Product Validator]
+        A3 --> A4[Store in Products Table]
+        A4 --> A5[Your Product Catalog Ready]
+    end
+    
+    subgraph "2. Competitor Data Input"
+        B1[Email with Attachments] --> B2[Email Processor]
+        B1b[Direct File Upload] --> B3[Universal File Handler]
+        B2 --> B3
+        B3 --> B4[Extract Competitor Products]
+    end
+    
+    subgraph "3. Intelligent Matching Engine"
+        B4 --> C1[Sequential Matching Service]
+        A5 --> C1
+        C1 --> C2{Stage 1: Exact Match}
+        C2 -->|No Match| C3{Stage 2: Fuzzy Match}
+        C3 -->|No Match| C4{Stage 3: Spec Match}
+        C4 -->|No Match| C5{Stage 4: AI Match}
+        C5 -->|No Match| C6{Stage 5: Web Research}
+        C2 -->|Match Found| C7[Match Result]
+        C3 -->|Match Found| C7
+        C4 -->|Match Found| C7
+        C5 -->|Match Found| C7
+        C6 -->|Match/No Match| C7
+    end
+    
+    subgraph "4. Results & Storage"
+        C7 --> D1[Confidence Scoring]
+        D1 --> D2[Manual Review UI]
+        D2 --> D3[Approved Mappings]
+        D3 --> D4[Crosswalk Database]
+        D4 --> D5[Knowledge Base]
+        D5 -->|Improve Future Matches| C1
+    end
+```
+
+### Detailed Component Architecture
+
+#### **1. Price Book Management (Your Products)**
+- **Entry Point**: Products page → Import button
+- **File Processing**: 
+  - `fileProcessor.service.ts` - Universal file handler (CSV, Excel, PDF, etc.)
+  - `productValidator.service.ts` - HVAC-specific validation
+  - Extracts: SKU, Model, Brand, Type, Tonnage, SEER, AFUE, HSPF, Refrigerant
+- **Storage**: SQLite `products` table
+- **UI**: Product management interface with search, filter, edit capabilities
+
+#### **2. Competitor Data Processing**
+- **Email Processing Pipeline**:
+  ```
+  Email (.msg/.eml) → emailProcessor.service.ts
+    ├── Text Content → Text Extractor
+    ├── HTML Content → HTML Parser
+    ├── Attachments → Attachment Router
+    │   ├── PDF → PDF Extractor
+    │   ├── Excel → Excel Parser
+    │   └── Images → OCR Engine
+    └── Embedded Images → Image Extractor + OCR
+  ```
+- **Direct File Upload**: Drag & drop or browse for files
+- **Supported Formats**: CSV, Excel, PDF, Images, ZIP, MSG/EML, Word docs
+- **Output**: Array of `CompetitorProduct` objects with SKU, company, price, specs
+
+#### **3. Sequential Matching System**
+- **Service**: `sequential-matching.service.ts`
+- **Matching Stages**:
+  1. **Exact Match** (0-1ms)
+     - Direct SKU comparison
+     - Model number matching
+     - Confidence: 85-95%
+  
+  2. **Fuzzy Match** (1-5ms)
+     - Levenshtein distance algorithm
+     - Similarity scoring
+     - Confidence: 60-80%
+  
+  3. **Specification Match** (5-10ms)
+     - Tonnage comparison (±10%)
+     - SEER/AFUE/HSPF matching
+     - Product type alignment
+     - Confidence: 60-75%
+  
+  4. **AI Enhancement** (2-8s)
+     - OpenAI GPT-4 integration
+     - HVAC domain knowledge
+     - Cross-brand recognition
+     - Confidence: 70-85%
+  
+  5. **Web Research** (5-15s)
+     - Manufacturer websites
+     - AHRI directory
+     - Distributor catalogs
+     - Confidence: Variable
+
+#### **4. AI System Integration**
+- **OpenAI Configuration**: 
+  - Model: GPT-4-turbo-preview
+  - JSON response format enforced
+  - HVAC-specific prompts
+- **Data Flow**:
+  ```typescript
+  CompetitorProduct + OurProducts[] 
+    → AI Prompt Generation
+    → OpenAI API Call
+    → Structured JSON Response
+    → Match Result with Reasoning
+  ```
+- **Cost**: ~$0.01-0.05 per product
+
+#### **5. Results Management**
+- **Crosswalk UI**: 
+  - Results table with confidence indicators
+  - Manual review/approval interface
+  - Bulk actions (approve/reject)
+- **Database Storage**:
+  - `crosswalk_mappings` - Approved mappings
+  - `processing_history` - Audit trail
+  - `competitor_data` - Historical pricing
+- **Knowledge Base**: Learns from successful matches
+
+### Data Models
+
+#### Your Product (Product)
+```typescript
+{
+  sku: string;          // Your SKU
+  model: string;        // Model number
+  brand: string;        // Brand name
+  type: ProductType;    // AC, Heat Pump, Furnace, Air Handler
+  tonnage?: number;     // Cooling capacity
+  seer?: number;        // Efficiency rating
+  afue?: number;        // Furnace efficiency
+  hspf?: number;        // Heat pump efficiency
+  refrigerant?: string; // R-410A, R-32, etc.
+}
+```
+
+#### Competitor Product
+```typescript
+{
+  sku: string;
+  company: string;
+  price: number;
+  model?: string;
+  description?: string;
+  specifications?: {
+    tonnage?: string;
+    seer?: string;
+    product_type?: string;
+    [key: string]: any;
+  };
+}
+```
+
+#### Match Result
+```typescript
+{
+  competitor: CompetitorProduct;
+  matches: Array<{
+    ourSku: string;
+    ourProduct: Product;
+    confidence: number;      // 0.0-1.0
+    matchMethod: MatchMethod; // exact_sku, fuzzy, specs, ai_enhanced
+    reasoning: string[];      // Why this match was made
+  }>;
+  matchingStage: 'exact' | 'fuzzy' | 'specification' | 'ai_enhanced' | 'web_research' | 'failed';
+  processingSteps: string[]; // Audit trail
+}
+```
+
+### Key Services & Their Roles
+
+1. **fileProcessor.service.ts** - Universal file input handler
+2. **emailProcessor.service.ts** - Email deconstruction & attachment extraction
+3. **sequential-matching.service.ts** - Core matching engine
+4. **openai-extractor.ts** - AI-powered data extraction
+5. **productValidator.service.ts** - HVAC-specific validation
+6. **enhancedAIProcessor.service.ts** - Multi-strategy AI fallback system
+
+### Processing Example
+
+**Input**: Email with "Trane Price List Q1 2025.xlsx" attachment
+```
+1. Email arrives → emailProcessor extracts attachment
+2. Excel file → fileProcessor extracts products:
+   - TRANE-XR16-036: $3,800
+   - TRANE-XR14-024: $2,900
+3. Sequential matching begins:
+   - Stage 1: No exact SKU match
+   - Stage 2: No fuzzy match
+   - Stage 3: Finds YOUR-AC-3T-16S (3 ton, 16 SEER match)
+   - Result: 75% confidence match
+4. Manual review → Approve → Stored in crosswalk_mappings
+5. Next time TRANE-XR16-036 appears → Instant match
+```
+
 ## Complete Project Structure (Updated January 2025)
 ```
 comp-price-bot/                # Our root directory
@@ -546,603 +751,100 @@ graph TD
 
 This system now **rivals or exceeds professional crosswalk services** used by major HVAC distributors and manufacturers. The combination of AI matching, web research, learning capabilities, and professional review workflow creates a truly comprehensive enterprise solution.
 
-### Phase 4: Advanced Features ✅ **COMPLETED**
-**Goal**: Historical tracking and automation
+### Phase 4: AI System Enhancement & Optimization
+**Goal**: Improve AI fallback reliability, performance, and scalability
 
-#### Day 1-2: History & Analytics ✅ **DONE**
-- [x] **Processing history log**: Complete database tracking with file metadata, match statistics, and processing times
-- [x] **Success rate metrics**: Comprehensive analytics dashboard with match accuracy, confidence scoring, and performance tracking
-- [x] **Mapping statistics**: Method breakdown (exact, fuzzy, specs, AI), confidence distribution, and company comparisons
-- [x] **Export functionality**: Full CSV export of history data with all analytics fields
+#### Completed Features ✅
+- [x] **History & Analytics**: Complete tracking with enterprise-grade reporting
+- [x] **Email Deconstruction**: Multi-component processing with correlation engine  
+- [x] **Performance Optimization**: Caching, background processing, memory management
+- [x] **Database Infrastructure**: Optimized indexes and metadata tracking
 
-## ✅ **PHASE 4 COMPLETE - COMPREHENSIVE HISTORY & ANALYTICS SYSTEM** ✅
+#### AI Enhancement Provisions
 
-### **🏆 DELIVERABLE ACHIEVED:**
-**✅ Complete historical tracking and analytics system with enterprise-grade reporting**
+##### 1. Result Caching System
+- [ ] Implement Redis/SQLite cache for AI responses
+- [ ] Cache key based on competitor SKU + company + specifications hash
+- [ ] TTL-based expiration (30 days default, configurable)
+- [ ] Cache warming strategies for frequently matched products
+- [ ] Analytics on cache hit/miss rates
 
-### **📊 PHASE 4 TECHNICAL ACHIEVEMENTS:**
+##### 2. Batch Processing for AI Calls
+- [ ] Queue-based batch processor for multiple matches
+- [ ] Combine multiple products into single AI request (up to 10)
+- [ ] Parallel processing with rate limiting
+- [ ] Progress tracking and cancellation support
+- [ ] Cost optimization through request consolidation
 
-**Database Infrastructure:**
-- Enhanced processing_history table with 15+ analytics fields
-- Comprehensive crosswalk_mappings tracking for confidence analysis
-- Optimized indexes for fast analytics queries
-- Full IPC integration with history handlers
+##### 3. Feedback & Learning Mechanism
+- [ ] Track successful matches and user corrections
+- [ ] Build pattern database for common brand/model relationships
+- [ ] Implement similarity scoring based on historical matches
+- [ ] Export/import learned patterns for knowledge transfer
+- [ ] Confidence adjustment based on verification history
 
-**Analytics Dashboard:**
-- **3-tab interface**: Overview, Analytics, History with professional navigation
-- **Key metrics cards**: Files processed, total products, match rate, average confidence
-- **Recent activity feed**: Latest 5 processing sessions with visual indicators
-- **Top companies ranking**: By volume with match rate comparisons
-- **Method distribution**: Visual breakdown of exact, fuzzy, specs, and AI matches
-- **Confidence visualization**: 5-tier distribution (Excellent, Good, Fair, Poor, None)
-- **Performance metrics**: Processing speed, items per hour calculations
+##### 4. Chunking Strategy for Large Catalogs
+- [ ] Dynamic chunking based on token limits
+- [ ] Intelligent product grouping (by type, brand, specs)
+- [ ] Overlap handling for cross-chunk matches
+- [ ] Chunk result aggregation and deduplication
+- [ ] Memory-efficient streaming processing
 
-**Professional UI/UX:**
-- **Tabbed navigation** with active state indicators and smooth transitions
-- **Color-coded metrics** with dynamic coloring based on performance thresholds
-- **Interactive tables** with hover effects and expandable details
-- **Responsive design** that works on desktop and mobile devices
-- **Professional styling** with gradients, shadows, and modern card layouts
+##### 5. Retry Logic with Exponential Backoff
+- [ ] Implement retry wrapper for all AI calls
+- [ ] Exponential backoff: 1s, 2s, 4s, 8s, 16s
+- [ ] Different strategies for different error types
+- [ ] Circuit breaker pattern for API failures
+- [ ] Fallback to cached/historical data on failure
 
-**Export & Data Management:**
-- **Full CSV export** with 15 columns including all metadata and statistics
-- **Automatic filename generation** with date stamps
-- **Record deletion** with confirmation dialogs
-- **Company filtering** in history view
-- **Real-time data refresh** after operations
+##### 6. Web Research Integration (Main Process)
+- [ ] IPC bridge for web research from main to renderer
+- [ ] Background worker for web searches
+- [ ] Result caching and deduplication
+- [ ] Source reliability scoring
+- [ ] Integration with knowledge base
 
-**Advanced Analytics Features:**
-- **Match rate color coding**: Green (90%+), Blue (80-89%), Orange (70-79%), Red (<70%)
-- **Confidence score analysis**: Color-coded from green (95%+) to gray (<50%)
-- **File size tracking**: Human-readable format conversion (B, KB, MB, GB)
-- **Processing time analysis**: Milliseconds to seconds conversion with performance calculations
-- **Company comparison**: Ranking by volume with match rate statistics
+##### 7. Confidence Score Standardization
+- [ ] Unified confidence calculation across all stages
+- [ ] Weighted scoring based on match method reliability
+- [ ] Historical accuracy tracking per method
+- [ ] Dynamic threshold adjustment
+- [ ] Confidence explanation for transparency
 
-### **🎯 BUSINESS VALUE DELIVERED:**
+##### 8. Enhanced Error Recovery
+- [ ] Graceful degradation when AI unavailable
+- [ ] Fallback matching strategies
+- [ ] User notification system for degraded performance
+- [ ] Automatic recovery and retry scheduling
+- [ ] Comprehensive error logging and analysis
 
-**Performance Insights:**
-- **Processing efficiency tracking**: Identify bottlenecks and optimize workflows
-- **Match quality monitoring**: Track confidence scores and method effectiveness
-- **Company performance analysis**: Understand which suppliers provide better data
+##### 9. Type System Harmonization
+- [ ] Unified product interface across all components
+- [ ] Type converters between different product representations
+- [ ] Validation at boundaries
+- [ ] Consistent field mapping
+- [ ] Documentation of type relationships
 
-**Operational Intelligence:**
-- **Historical trend analysis**: Track improvements over time
-- **Capacity planning**: Understand processing capabilities and limits
-- **Quality control**: Monitor match accuracy and flag potential issues
-
-**Professional Reporting:**
-- **Executive dashboards**: High-level metrics for management reporting
-- **Detailed history**: Complete audit trail for compliance and review
-- **Export capabilities**: Integration with external systems and spreadsheets
-
-### **🚀 SYSTEM CAPABILITIES NOW INCLUDE:**
-- **Enterprise analytics** comparable to professional BI systems
-- **Real-time performance monitoring** with visual indicators
-- **Comprehensive audit trails** for regulatory compliance
-- **Professional reporting** suitable for executive presentations
-- **Operational insights** for continuous improvement
-- **Scalable architecture** ready for high-volume processing
-
-This analytics system provides the **intelligence layer** that transforms the HVAC crosswalk tool from a simple matching system into a **comprehensive business intelligence platform** for competitive analysis and operational optimization.
-
-#### Day 3-5: Email Deconstruction System 📧 ✅ **COMPLETED**
-- [x] **Email Content Parser**: Enhanced MSG/EML parsing with attachment extraction
-- [x] **Multi-Component Processor**: Intelligent routing of text, images, and attachments  
-- [x] **Image Extraction Service**: Extract embedded images and inline attachments
-- [x] **Attachment Processing Pipeline**: Handle PDF attachments, Excel sheets, image galleries
-- [x] **Content Correlation Engine**: Link text references to visual content intelligently
-- [x] **Unified Email Results**: Merge data from all email components with source tracking
-
-#### Day 6-7: Performance & Optimization ✅ **COMPLETED**
-- [x] Caching layer for processed components
-- [x] Background processing for large email batches
-- [x] Database optimization for email metadata
-- [x] Memory management for image processing
-
-**✅ Deliverable ACHIEVED**: Production-ready with comprehensive email processing automation
-
-## ✅ **PHASE 4 COMPLETE - PERFORMANCE & OPTIMIZATION SYSTEM** ✅
-
-### **🚀 TECHNICAL ACHIEVEMENTS:**
-
-**1. Intelligent Caching Layer** ✅
-- **Disk-persistent cache**: 500MB default with configurable limits and automatic cleanup
-- **File integrity verification**: MD5 hashing prevents stale cache issues
-- **Cache statistics**: Hit rates, performance metrics, and storage analytics
-- **Smart eviction policies**: LRU with age-based cleanup and size constraints
-
-**2. Background Batch Processing** ✅
-- **Concurrent processing**: Configurable concurrency with semaphore control
-- **Progress tracking**: Real-time progress updates with ETA calculations
-- **Error resilience**: Retry logic, timeout handling, and graceful degradation
-- **Queue management**: Job scheduling, cancellation, and cleanup capabilities
-
-**3. Database Optimization** ✅
-- **Email metadata tables**: Comprehensive tracking of processing statistics
-- **Optimized indexes**: Fast queries for file hashes, processing times, and confidence scores
-- **Analytics views**: Pre-computed summaries for performance reporting
-- **Automatic triggers**: Real-time statistics updates and daily aggregations
-
-**4. Memory Management** ✅
-- **Intelligent monitoring**: Real-time memory usage tracking with configurable thresholds
-- **Buffer pooling**: Reusable buffers for image processing with automatic cleanup
-- **Cache management**: Smart eviction policies based on usage patterns and memory pressure
-- **Emergency handling**: Automatic cleanup when memory usage becomes critical
-
-### **💪 PERFORMANCE IMPROVEMENTS:**
-
-**Processing Speed:**
-- **Cache hits**: 70-90% cache hit rate for repeated email processing
-- **Background processing**: 3x faster batch processing with concurrent execution
-- **Memory efficiency**: 60% reduction in memory usage through buffer pooling
-- **Database queries**: 5x faster analytics through optimized indexes
-
-**Resource Management:**
-- **Automatic cleanup**: Intelligent memory management prevents OOM crashes
-- **Disk usage**: Configurable cache sizes with automatic eviction
-- **CPU optimization**: Background processing prevents UI blocking
-- **Error recovery**: Robust error handling with retry mechanisms
-
-**Scalability:**
-- **Batch processing**: Handle 100+ emails concurrently with progress tracking
-- **Memory monitoring**: Prevents crashes during large-scale processing
-- **Database optimization**: Efficient storage and retrieval of processing metadata
-- **Cache efficiency**: Reduces redundant processing by 70-90%
-
-### **🎯 BUSINESS IMPACT:**
-
-**Operational Efficiency:**
-- **Faster processing**: 3-5x speed improvement for repeated emails
-- **Resource optimization**: 60% less memory usage during large batch operations
-- **Reliability**: Robust error handling and recovery mechanisms
-- **Monitoring**: Comprehensive analytics for performance optimization
-
-**User Experience:**
-- **Responsive UI**: Background processing prevents interface freezing
-- **Progress tracking**: Real-time updates for long-running operations
-- **Error feedback**: Clear error reporting with retry mechanisms
-- **Performance insights**: Detailed analytics for system optimization
-
-### **🔧 ENTERPRISE FEATURES:**
-
-**Production Ready:**
-- **Monitoring dashboards**: Memory usage, cache statistics, processing metrics
-- **Automatic cleanup**: Self-maintaining system with configurable retention policies
-- **Error tracking**: Comprehensive error logging and analysis
-- **Performance analytics**: Detailed insights into system performance and bottlenecks
-
-**Scalable Architecture:**
-- **Configurable limits**: Memory, cache, and processing constraints
-- **Resource management**: Intelligent allocation and cleanup of system resources
-- **Background processing**: Non-blocking operations for better user experience
-- **Database optimization**: Efficient storage and retrieval with automatic maintenance
-
-This performance optimization system transforms the email processing from a basic tool into an **enterprise-grade, production-ready platform** capable of handling high-volume email processing with professional monitoring and management capabilities.
+##### 10. Memory Optimization
+- [ ] Streaming file processing for large files
+- [ ] Chunked reading with configurable buffer sizes
+- [ ] Garbage collection optimization
+- [ ] Memory usage monitoring and alerts
+- [ ] Automatic cache eviction under memory pressure
 
 ### Phase 5: Polish & Packaging
-**Goal**: Professional release
+**Goal**: Professional release with enhanced user experience
 
-#### Day 1-2: UI/UX Polish
-- [ ] Consistent design system
-- [ ] Keyboard shortcuts
-- [ ] Tooltips and help text
-- [ ] Error messages
-
-#### Day 3-4: Packaging
-- [ ] Windows installer (NSIS)
-- [ ] Mac installer (DMG)
-- [ ] Auto-updater setup
-- [ ] Code signing
-
-#### Day 5-6: Documentation
-- [ ] User manual
-- [ ] Video tutorials
-- [ ] API documentation
-- [ ] Deployment guide
-
-#### Day 7: Release
-- [ ] Final testing
-- [ ] Release builds
-- [ ] GitHub releases
-- [ ] Update server setup
-
-**Deliverable**: Installable app with documentation
-
-## Future Enhancement Opportunities
-
-### OpenAI Agents Enhancement (Evaluated January 2025)
-**Status**: Documented for future consideration - **NOT IMPLEMENTED** due to cost concerns
-
-**Capabilities Available:**
-- **OpenAI Responses API (2025)**: Built-in file search, web search, and computer use tools
-- **Enhanced Image Recognition**: Process product photos, spec sheets, catalog images with AI
-- **Real-Time Web Verification**: Live competitor data lookup with citations
-- **Computer Use Agent**: Direct competitor website access for spec verification
-- **Multi-Agent Workflows**: Specialized agents for different matching strategies
-
-**Potential Power Enhancements:**
-- **Image-based matching**: Process any competitor document/photo format
-- **Live specification lookup**: Real-time web research for uncertain matches  
-- **Visual product identification**: AI recognition from product photos
-- **Direct competitor site access**: Automated spec sheet retrieval
-- **Enhanced accuracy**: 95%+ with real-time verification vs current 87%
-
-**Cost Analysis:**
-- **Current system**: ~$0.01-0.05 per product (basic OpenAI API)
-- **Enhanced system**: ~$0.25 per product (file search $2.50/1000 queries + web search + computer use)
-- **Batch impact**: 10-20 products = $2.50-5.00 per batch (expensive for frequent use)
-
-**Decision**: 
-Current system architecture is already sophisticated and handles matching excellently. The enhanced capabilities would provide marginal improvement at 5-10x cost increase. **Recommended to monitor pricing changes** and **consider for high-value/complex matching scenarios only**.
-
-**Future Triggers for Reconsideration:**
-- OpenAI pricing reductions for agent tools
-- Client requests for real-time competitor monitoring
-- Need for processing complex image-heavy competitor data
-- High-volume scenarios where accuracy gains justify cost
-
-## Email Deconstruction System - Phase 4 Technical Specification
-
-### **📧 Enhanced Email Processing Architecture**
-
-**Current Gap**: Email processing only extracts text content and ignores embedded images, attachments, and visual data that often contain the most valuable competitor pricing and product information.
-
-**Solution**: Comprehensive email deconstruction system that intelligently processes ALL email components.
-
-### **🔧 Technical Implementation Plan**
-
-#### **1. Enhanced Email Content Parser**
-```typescript
-// Enhanced email parser with full content extraction
-export class AdvancedEmailProcessor {
-  async processEmailFile(filePath: string): Promise<EmailDeconstructionResult> {
-    const emailType = this.detectEmailType(filePath); // MSG, EML, MBOX
-    
-    switch(emailType) {
-      case 'MSG':
-        return await this.processMSGWithAttachments(filePath);
-      case 'EML': 
-        return await this.processEMLWithAttachments(filePath);
-      default:
-        return await this.processGenericEmail(filePath);
-    }
-  }
-  
-  private async processMSGWithAttachments(filePath: string): Promise<EmailDeconstructionResult> {
-    // Use proper MSG parsing library (msg-reader, node-outlook)
-    const msgData = await this.parseMSGFile(filePath);
-    
-    return {
-      textContent: msgData.body,
-      htmlContent: msgData.bodyHTML, 
-      attachments: msgData.attachments, // PDFs, Excel, images
-      embeddedImages: msgData.embeddedImages, // Inline images
-      metadata: msgData.headers,
-      processingMethod: 'MSG_FULL'
-    };
-  }
-}
-
-interface EmailDeconstructionResult {
-  textContent: string;
-  htmlContent?: string;
-  attachments: EmailAttachment[];
-  embeddedImages: EmbeddedImage[];
-  metadata: EmailMetadata;
-  processingMethod: string;
-}
-```
-
-#### **2. Multi-Component Processing Pipeline**
-```typescript
-// Intelligent routing system for different email components
-export class EmailComponentRouter {
-  async processEmailComponents(email: EmailDeconstructionResult): Promise<ExtractedData[]> {
-    const allResults: ExtractedData[] = [];
-    
-    // Process text content
-    if (email.textContent) {
-      const textResults = await this.fileProcessor.extractFromText(
-        email.textContent, 'Email Text'
-      );
-      allResults.push(...textResults);
-    }
-    
-    // Process HTML content (tables, structured data)
-    if (email.htmlContent) {
-      const htmlResults = await this.processHTMLContent(email.htmlContent);
-      allResults.push(...htmlResults);
-    }
-    
-    // Process each attachment with appropriate handler
-    for (const attachment of email.attachments) {
-      const attachmentResults = await this.routeAttachment(attachment);
-      allResults.push(...attachmentResults);
-    }
-    
-    // Process embedded images with OCR
-    for (const image of email.embeddedImages) {
-      const imageResults = await this.processEmbeddedImage(image);
-      allResults.push(...imageResults);
-    }
-    
-    // Correlate and merge results
-    return await this.correlateResults(allResults, email);
-  }
-  
-  private async routeAttachment(attachment: EmailAttachment): Promise<ExtractedData[]> {
-    const extension = path.extname(attachment.filename).toLowerCase();
-    
-    switch(extension) {
-      case '.pdf':
-        return await this.fileProcessor.processPDF(attachment.content);
-      case '.xlsx':
-      case '.xls':
-        return await this.fileProcessor.processExcel(attachment.content);
-      case '.jpg':
-      case '.png':
-      case '.tiff':
-        return await this.fileProcessor.processImage(attachment.content);
-      case '.docx':
-        return await this.fileProcessor.processWord(attachment.content);
-      default:
-        // Try text extraction for unknown types
-        return await this.fileProcessor.extractFromText(
-          attachment.content.toString(), `Attachment: ${attachment.filename}`
-        );
-    }
-  }
-}
-```
-
-#### **3. Advanced Image Extraction Service**  
-```typescript
-// Extract and process all visual content from emails
-export class EmailImageExtractor {
-  async extractAllImages(email: EmailDeconstructionResult): Promise<ProcessedImage[]> {
-    const images: ProcessedImage[] = [];
-    
-    // Extract embedded images (inline content)
-    for (const embeddedImage of email.embeddedImages) {
-      images.push({
-        source: 'embedded',
-        filename: embeddedImage.contentId || `embedded_${Date.now()}.${embeddedImage.extension}`,
-        content: embeddedImage.data,
-        contentType: embeddedImage.contentType,
-        size: embeddedImage.data.length
-      });
-    }
-    
-    // Extract images from HTML content (base64, cid references)
-    if (email.htmlContent) {
-      const htmlImages = await this.extractImagesFromHTML(email.htmlContent);
-      images.push(...htmlImages);
-    }
-    
-    // Process image attachments
-    const imageAttachments = email.attachments.filter(att => 
-      this.isImageFile(att.filename)
-    );
-    
-    for (const imageAtt of imageAttachments) {
-      images.push({
-        source: 'attachment',
-        filename: imageAtt.filename,
-        content: imageAtt.content,
-        contentType: imageAtt.contentType,
-        size: imageAtt.size
-      });
-    }
-    
-    return images;
-  }
-  
-  async processExtractedImages(images: ProcessedImage[]): Promise<ExtractedData[]> {
-    const results: ExtractedData[] = [];
-    
-    for (const image of images) {
-      try {
-        // Enhanced OCR with preprocessing
-        const ocrText = await this.performEnhancedOCR(image);
-        
-        // AI-powered product extraction from OCR text
-        const productData = await this.extractProductsFromOCR(ocrText, image.filename);
-        
-        results.push(...productData);
-      } catch (error) {
-        console.warn(`Failed to process image ${image.filename}:`, error.message);
-      }
-    }
-    
-    return results;
-  }
-}
-```
-
-#### **4. Content Correlation Engine**
-```typescript
-// Links text references to visual content intelligently  
-export class EmailContentCorrelator {
-  async correlateEmailContent(
-    textResults: ExtractedData[],
-    imageResults: ExtractedData[], 
-    attachmentResults: ExtractedData[]
-  ): Promise<CorrelatedEmailData[]> {
-    
-    const correlatedResults: CorrelatedEmailData[] = [];
-    
-    // Find products mentioned in text that also appear in images
-    for (const textProduct of textResults) {
-      const correlation: CorrelatedEmailData = {
-        primarySource: textProduct,
-        supportingEvidence: [],
-        confidence: textProduct.confidence || 0.5,
-        sources: ['text']
-      };
-      
-      // Look for matching SKUs in images
-      const matchingImages = imageResults.filter(img => 
-        this.skuMatch(textProduct.sku, img.sku)
-      );
-      
-      if (matchingImages.length > 0) {
-        correlation.supportingEvidence.push(...matchingImages);
-        correlation.sources.push('image');
-        correlation.confidence += 0.2; // Boost confidence for multi-source confirmation
-      }
-      
-      // Look for matching data in attachments
-      const matchingAttachments = attachmentResults.filter(att =>
-        this.skuMatch(textProduct.sku, att.sku)
-      );
-      
-      if (matchingAttachments.length > 0) {
-        correlation.supportingEvidence.push(...matchingAttachments);
-        correlation.sources.push('attachment');
-        correlation.confidence += 0.15;
-      }
-      
-      correlatedResults.push(correlation);
-    }
-    
-    // Handle orphaned image/attachment data (not mentioned in text)
-    const orphanedResults = this.findOrphanedData(imageResults, attachmentResults, textResults);
-    correlatedResults.push(...orphanedResults);
-    
-    return correlatedResults;
-  }
-}
-```
-
-#### **5. Unified Email Processing Result**
-```typescript
-interface ProcessedEmailResult {
-  // Raw extracted data from all sources
-  textData: ExtractedData[];
-  imageData: ExtractedData[];  
-  attachmentData: ExtractedData[];
-  
-  // Correlated and enhanced results
-  correlatedData: CorrelatedEmailData[];
-  
-  // Processing metadata
-  processingStats: {
-    totalComponents: number;
-    textComponents: number;
-    imageComponents: number; 
-    attachmentComponents: number;
-    processingTime: number;
-    confidenceDistribution: ConfidenceStats;
-  };
-  
-  // Source tracking for audit
-  sourceMap: {
-    [productId: string]: {
-      textMentions: string[];
-      imageSources: string[];
-      attachmentSources: string[];
-    }
-  };
-}
-```
-
-### **📊 Enhanced Email Processing Capabilities**
-
-#### **What This System Will Handle:**
-
-**📧 Email Types:**
-- ✅ `.msg` files (Outlook) with full attachment extraction
-- ✅ `.eml` files (standard email) with embedded content
-- ✅ `.mbox` files (email archives) with batch processing
-- ✅ Forwarded emails with multiple embedded conversations
-
-**📎 Attachment Processing:**
-- ✅ **PDF price sheets** → Full text + table extraction
-- ✅ **Excel spreadsheets** → Complete product catalogs  
-- ✅ **Product images** → OCR for spec sheets and catalogs
-- ✅ **Word documents** → Proposal documents and spec sheets
-- ✅ **ZIP archives** → Extract and process all contained files
-
-**🖼️ Embedded Content:**
-- ✅ **Inline images** → Screenshots of pricing systems  
-- ✅ **HTML tables** → Structured pricing data
-- ✅ **Base64 images** → Embedded product photos
-- ✅ **Signature images** → Company logos for source identification
-
-**🔗 Content Correlation:**
-- ✅ **Text-to-image matching** → "See attached for XR16 pricing" → Links to image data
-- ✅ **Multi-source verification** → Same product in text + image = higher confidence
-- ✅ **Orphaned data detection** → Products only in images get processed
-- ✅ **Source attribution** → Track where each data point came from
-
-### **💪 Real-World Processing Example:**
-
-**Input Email:**  
-```
-Subject: HVAC Pricing Update - Q1 2025
-
-Hi John,
-
-Here are the updated prices for the Trane units:
-
-XR16-024-230: $2,850 (see spec sheet attached)
-XR16-036-230: $3,200
-
-[Embedded Image: Product comparison chart]
-[Attachment: Trane_Q1_2025_Pricing.xlsx]  
-[Attachment: XR16_Spec_Sheet.pdf]
-
-Let me know if you need the Goodman alternatives.
-```
-
-**Enhanced Processing Result:**
-```json
-{
-  "correlatedData": [
-    {
-      "primarySource": {
-        "sku": "XR16-024-230",
-        "company": "Trane", 
-        "price": 2850,
-        "source": "Email Text"
-      },
-      "supportingEvidence": [
-        {
-          "sku": "XR16-024-230",
-          "specs": "3.0 ton, 16 SEER, R-410A",
-          "source": "XR16_Spec_Sheet.pdf"
-        },
-        {
-          "sku": "XR16-024-230", 
-          "price": 2850,
-          "source": "Trane_Q1_2025_Pricing.xlsx"
-        }
-      ],
-      "confidence": 0.95,
-      "sources": ["text", "attachment", "attachment"]
-    }
-  ],
-  "processingStats": {
-    "totalComponents": 5,
-    "textComponents": 1,
-    "imageComponents": 1,
-    "attachmentComponents": 2
-  }
-}
-```
-
-### **🎯 Business Impact:**
-
-**Current Email Processing**: 60% data capture  
-**Enhanced Email Processing**: 95% data capture
-
-**ROI Calculation:**
-- **Development time**: ~5-7 days
-- **Processing improvement**: 35% more data extracted per email
-- **Accuracy improvement**: Multi-source verification increases confidence
-- **Time savings**: No manual extraction of attachments/images needed
-
-This system would make your email processing **best-in-class** and handle the complex, multi-format competitor communications that are common in the HVAC industry.
+#### Planned Features
+- [ ] **Design System**: Consistent UI components and patterns
+- [ ] **Keyboard Shortcuts**: Power user productivity features
+- [ ] **Help System**: Contextual tooltips and integrated documentation
+- [ ] **Error UX**: User-friendly error messages and recovery flows
+- [ ] **Installers**: Professional Windows (NSIS) and Mac (DMG) packages
+- [ ] **Auto-Updates**: Seamless update mechanism
+- [ ] **Code Signing**: Security and trust certificates
+- [ ] **Documentation**: User manual, video tutorials, API docs
+- [ ] **Deployment**: CI/CD pipeline and release automation
 
 ## Core Functionality Details
 

@@ -10,7 +10,7 @@ import {
   mockAIResponses, 
   testConfig,
   expectedProcessingSteps 
-} from '../../test-data/sequential-matching-test-data';
+} from '../fixtures/sequential-matching-test-data';
 import { OpenAIClient } from '../../src/shared/services/openai-client';
 
 // Mock dependencies

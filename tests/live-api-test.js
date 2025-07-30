@@ -2,10 +2,13 @@
  * Complete Live API Test Suite
  * 
  * Tests sequential matching with real Allied Air catalog data and OpenAI API
- * Just run: OPENAI_API_KEY="your-key" node tests/live-api-test.js
+ * Just run: node tests/live-api-test.js (with .env file configured)
  */
 
-const { SequentialMatchingService } = require('../dist/src/main/services/sequential-matching.service');
+// Load environment variables from .env file
+require('dotenv').config();
+
+const { SequentialMatchingService } = require('../dist/main/main/services/sequential-matching.service');
 const { alliedAirCatalog, competitorProducts } = require('./data/allied-air-catalog');
 
 // Colors for pretty output
@@ -20,8 +23,10 @@ function log(color, message) {
 
 // Environment setup
 if (!process.env.OPENAI_API_KEY) {
-  log('red', '❌ Missing OPENAI_API_KEY environment variable');
-  log('yellow', '💡 Run with: OPENAI_API_KEY="your-key" node tests/live-api-test.js');
+  log('red', '❌ Missing OPENAI_API_KEY');
+  log('yellow', '💡 Please add your API key to the .env file:');
+  log('yellow', '   1. Edit .env file in project root');
+  log('yellow', '   2. Replace "sk-proj-paste-your-actual-key-here" with your actual API key');
   process.exit(1);
 }
 

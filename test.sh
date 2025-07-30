@@ -14,10 +14,26 @@ echo "  ✅ Show detailed matching results"
 echo "  ✅ Estimate costs (~\$0.05 total)"
 echo ""
 
-# Prompt for API key securely
-echo "🔑 Please enter your OpenAI API key:"
-read -s -p "API Key: " API_KEY
-echo ""
+# Check if .env file exists and has API key
+if [ -f ".env" ] && grep -q "OPENAI_API_KEY=sk-" .env; then
+    echo "🔑 Using API key from .env file"
+    API_KEY=$(grep "OPENAI_API_KEY=" .env | cut -d '=' -f 2)
+else
+    # Prompt for API key securely
+    echo "🔑 No API key found in .env file"
+    echo "Please enter your OpenAI API key:"
+    read -s -p "API Key: " API_KEY
+    echo ""
+    
+    # Offer to save to .env
+    echo ""
+    read -p "💾 Save API key to .env file for future use? (y/N): " -n 1 -r
+    echo ""
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        echo "OPENAI_API_KEY=$API_KEY" > .env
+        echo "✅ API key saved to .env file"
+    fi
+fi
 
 # Validate API key format
 if [[ ! "$API_KEY" =~ ^sk- ]]; then
@@ -30,7 +46,7 @@ if [ ${#API_KEY} -lt 20 ]; then
     exit 1
 fi
 
-echo "🔑 API key received: ${API_KEY:0:20}..."
+echo "🔑 API key validated: ${API_KEY:0:20}..."
 echo ""
 
 # Build project if needed

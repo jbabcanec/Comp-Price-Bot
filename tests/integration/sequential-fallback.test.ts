@@ -10,7 +10,7 @@ import {
   testScenarios, 
   mockAIResponses,
   testConfig 
-} from '../../test-data/sequential-matching-test-data';
+} from '../fixtures/sequential-matching-test-data';
 import { CompetitorProduct } from '../../src/shared/types/matching.types';
 
 // Mock external dependencies

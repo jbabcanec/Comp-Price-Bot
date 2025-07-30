@@ -4,16 +4,20 @@
  * SECURITY NOTE: Never commit API keys to version control!
  * 
  * To run this test:
- * 1. Set environment variable: export OPENAI_API_KEY="your-key-here"
+ * 1. Add your API key to .env file: OPENAI_API_KEY=sk-proj-...
  * 2. Run: node tests/manual/live-api-test.js
  */
 
-const { SequentialMatchingService } = require('../../dist/src/main/services/sequential-matching.service');
+// Load environment variables from .env file
+require('dotenv').config();
+
+const { SequentialMatchingService } = require('../../dist/main/main/services/sequential-matching.service');
 
 // Check for API key
 if (!process.env.OPENAI_API_KEY) {
-  console.error('❌ Please set OPENAI_API_KEY environment variable');
-  console.log('Example: export OPENAI_API_KEY="sk-..."');
+  console.error('❌ Please set OPENAI_API_KEY in your .env file');
+  console.log('1. Create a .env file in the project root');
+  console.log('2. Add: OPENAI_API_KEY=sk-proj-your-key-here');
   process.exit(1);
 }
 
