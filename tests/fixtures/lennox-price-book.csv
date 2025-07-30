@@ -1,0 +1,44 @@
+sku,description,type,tonnage,seer,afue,hspf,msrp,category
+XC13-024-230,XC13 Air Conditioner 2 Ton 13 SEER Single-Stage R-410A 230V,AC,2,13,,,2450,Residential AC
+XC13-036-230,XC13 Air Conditioner 3 Ton 13 SEER Single-Stage R-410A 230V,AC,3,13,,,3200,Residential AC
+XC13-048-230,XC13 Air Conditioner 4 Ton 13 SEER Single-Stage R-410A 230V,AC,4,13,,,4100,Residential AC
+XC16-024-230,XC16 Air Conditioner 2 Ton 16 SEER Single-Stage R-410A 230V,AC,2,16,,,2850,Residential AC
+XC16-036-230,XC16 Air Conditioner 3 Ton 16 SEER Single-Stage R-410A 230V,AC,3,16,,,3650,Residential AC
+XC16-048-230,XC16 Air Conditioner 4 Ton 16 SEER Single-Stage R-410A 230V,AC,4,16,,,4550,Residential AC
+XC20-024-230,XC20 Air Conditioner 2 Ton 20 SEER Two-Stage R-410A 230V,AC,2,20,,,3450,Residential AC
+XC20-036-230,XC20 Air Conditioner 3 Ton 20 SEER Two-Stage R-410A 230V,AC,3,20,,,4250,Residential AC
+XC25-024-230,XC25 Air Conditioner 2 Ton 25 SEER Variable R-410A 230V,AC,2,25,,,4850,Residential AC
+XC25-036-230,XC25 Air Conditioner 3 Ton 25 SEER Variable R-410A 230V,AC,3,25,,,5650,Residential AC
+XP13-024-230,XP13 Heat Pump 2 Ton 13 SEER 7.7 HSPF Single-Stage R-410A 230V,Heat Pump,2,13,,7.7,2650,Residential HP
+XP13-036-230,XP13 Heat Pump 3 Ton 13 SEER 7.7 HSPF Single-Stage R-410A 230V,Heat Pump,3,13,,7.7,3400,Residential HP
+XP13-048-230,XP13 Heat Pump 4 Ton 13 SEER 7.7 HSPF Single-Stage R-410A 230V,Heat Pump,4,13,,7.7,4300,Residential HP
+XP16-024-230,XP16 Heat Pump 2 Ton 16 SEER 9.5 HSPF Single-Stage R-410A 230V,Heat Pump,2,16,,9.5,3050,Residential HP
+XP16-036-230,XP16 Heat Pump 3 Ton 16 SEER 9.5 HSPF Single-Stage R-410A 230V,Heat Pump,3,16,,9.5,3850,Residential HP
+XP16-048-230,XP16 Heat Pump 4 Ton 16 SEER 9.5 HSPF Single-Stage R-410A 230V,Heat Pump,4,16,,9.5,4750,Residential HP
+XP20-024-230,XP20 Heat Pump 2 Ton 20 SEER 10 HSPF Two-Stage R-410A 230V,Heat Pump,2,20,,10.0,3650,Residential HP
+XP20-036-230,XP20 Heat Pump 3 Ton 20 SEER 10 HSPF Two-Stage R-410A 230V,Heat Pump,3,20,,10.0,4450,Residential HP
+XP25-024-230,XP25 Heat Pump 2 Ton 25 SEER 12 HSPF Variable R-410A 230V,Heat Pump,2,25,,12.0,5050,Residential HP
+XP25-036-230,XP25 Heat Pump 3 Ton 25 SEER 12 HSPF Variable R-410A 230V,Heat Pump,3,25,,12.0,5850,Residential HP
+EL195E-070-115,EL195E Gas Furnace 70K BTU 95% AFUE Single-Stage ECM Blower 115V,Furnace,,,95,,1850,Residential Furnace
+EL195E-100-115,EL195E Gas Furnace 100K BTU 95% AFUE Single-Stage ECM Blower 115V,Furnace,,,95,,2150,Residential Furnace
+EL296V-080-115,EL296V Gas Furnace 80K BTU 96% AFUE Two-Stage Variable ECM 115V,Furnace,,,96,,2450,Residential Furnace
+EL296V-100-115,EL296V Gas Furnace 100K BTU 96% AFUE Two-Stage Variable ECM 115V,Furnace,,,96,,2750,Residential Furnace
+EL296V-120-115,EL296V Gas Furnace 120K BTU 96% AFUE Two-Stage Variable ECM 115V,Furnace,,,96,,3050,Residential Furnace
+SLP98V-070-115,SLP98V Gas Furnace 70K BTU 98.7% AFUE Variable ECM Premium 115V,Furnace,,,98.7,,3250,Residential Furnace
+SLP98V-100-115,SLP98V Gas Furnace 100K BTU 98.7% AFUE Variable ECM Premium 115V,Furnace,,,98.7,,3650,Residential Furnace
+CBA27UHV-024,CBA27UHV Air Handler 2 Ton Variable ECM Multi-Position R-410A,Air Handler,2,,,,,1650,Air Handler
+CBA27UHV-036,CBA27UHV Air Handler 3 Ton Variable ECM Multi-Position R-410A,Air Handler,3,,,,,1950,Air Handler
+CBA27UHV-048,CBA27UHV Air Handler 4 Ton Variable ECM Multi-Position R-410A,Air Handler,4,,,,,2250,Air Handler
+CBA38MV-024,CBA38MV Air Handler 2 Ton Multi-Speed PSC Multi-Position R-410A,Air Handler,2,,,,,1450,Air Handler
+CBA38MV-036,CBA38MV Air Handler 3 Ton Multi-Speed PSC Multi-Position R-410A,Air Handler,3,,,,,1750,Air Handler
+CBA38MV-048,CBA38MV Air Handler 4 Ton Multi-Speed PSC Multi-Position R-410A,Air Handler,4,,,,,2050,Air Handler
+LRP14AC-024,LRP14AC Package Unit 2 Ton 14 SEER AC Single-Stage R-410A,Package Unit,2,14,,,3850,Commercial Package
+LRP14AC-036,LRP14AC Package Unit 3 Ton 14 SEER AC Single-Stage R-410A,Package Unit,3,14,,,4650,Commercial Package
+LRP14AC-048,LRP14AC Package Unit 4 Ton 14 SEER AC Single-Stage R-410A,Package Unit,4,14,,,5450,Commercial Package
+LRP14HP-024,LRP14HP Package Unit 2 Ton 14 SEER Heat Pump Single-Stage R-410A,Package Unit,2,14,,,4050,Commercial Package
+LRP14HP-036,LRP14HP Package Unit 3 Ton 14 SEER Heat Pump Single-Stage R-410A,Package Unit,3,14,,,4850,Commercial Package
+LRP14HP-048,LRP14HP Package Unit 4 Ton 14 SEER Heat Pump Single-Stage R-410A,Package Unit,4,14,,,5650,Commercial Package
+KGA12-024,KGA12 Commercial AC 2 Ton 12 EER Single-Stage R-410A 460V,AC,2,12,,,4250,Commercial AC
+KGA12-036,KGA12 Commercial AC 3 Ton 12 EER Single-Stage R-410A 460V,AC,3,12,,,5150,Commercial AC
+KGA12-048,KGA12 Commercial AC 4 Ton 12 EER Single-Stage R-410A 460V,AC,4,12,,,6050,Commercial AC
+KGA12-060,KGA12 Commercial AC 5 Ton 12 EER Single-Stage R-410A 460V,AC,5,12,,,6950,Commercial AC

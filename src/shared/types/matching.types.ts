@@ -30,6 +30,7 @@ export interface OurProduct {
 }
 
 export interface MatchResult {
+  competitor?: CompetitorProduct;
   ourSku: string;
   ourProduct: OurProduct;
   confidence: number;

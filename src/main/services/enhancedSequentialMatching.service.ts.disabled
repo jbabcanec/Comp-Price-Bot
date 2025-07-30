@@ -1,0 +1,386 @@
+/**
+ * Enhanced Sequential Matching Service with Caching and Batch Processing
+ * 
+ * Extends the original sequential matching with:
+ * - AI response caching for cost reduction
+ * - Batch processing for improved throughput
+ * - Enhanced retry logic and error handling
+ * - Performance monitoring and analytics
+ */
+
+import { logger } from './logger.service';
+import { SequentialMatchingService, SequentialMatchResult } from './sequential-matching.service';
+import { AICacheService } from './aiCacheService.service';
+import { AIBatchProcessor } from './aiBatchProcessor.service';
+import { CompetitorProduct, OurProduct } from '@shared/types/matching.types';
+
+export interface EnhancedMatchingConfig {
+  // Caching configuration
+  cacheTtlDays: number;
+  maxCacheEntries: number;
+  enableCacheWarming: boolean;
+  
+  // Batch processing configuration
+  batchSize: number;
+  maxConcurrentBatches: number;
+  rateLimitRpm: number;
+  
+  // Performance configuration
+  enableProfiling: boolean;
+  logPerformanceMetrics: boolean;
+}
+
+export interface MatchingStats {
+  totalMatches: number;
+  cacheHits: number;
+  cacheMisses: number;
+  batchProcessed: number;
+  averageMatchTime: number;
+  successRate: number;
+  costSaved: number;
+}
+
+export class EnhancedSequentialMatchingService extends SequentialMatchingService {
+  private cacheService?: AICacheService;
+  private batchProcessor?: AIBatchProcessor;
+  private config: EnhancedMatchingConfig;
+  private stats: MatchingStats;
+  private performanceTimes: number[] = [];
+
+  constructor(config: Partial<EnhancedMatchingConfig> = {}) {
+    super();
+    
+    this.config = {
+      // Cache defaults
+      cacheTtlDays: 30,
+      maxCacheEntries: 10000,
+      enableCacheWarming: true,
+      
+      // Batch defaults
+      batchSize: 10,
+      maxConcurrentBatches: 3,
+      rateLimitRpm: 50,
+      
+      // Performance defaults  
+      enableProfiling: true,
+      logPerformanceMetrics: true,
+      
+      ...config
+    };
+
+    this.stats = {
+      totalMatches: 0,
+      cacheHits: 0,
+      cacheMisses: 0,
+      batchProcessed: 0,
+      averageMatchTime: 0,
+      successRate: 0,
+      costSaved: 0
+    };
+
+    this.initializeServices();
+  }
+
+  private async initializeServices(): Promise<void> {
+    try {
+      // Initialize cache service
+      this.cacheService = new AICacheService({
+        ttlDays: this.config.cacheTtlDays,
+        maxEntries: this.config.maxCacheEntries,
+        enableWarmup: this.config.enableCacheWarming
+      });
+      await this.cacheService.initialize();
+
+      // Initialize batch processor
+      const settings = await this.getEnhancedSettings();
+      this.batchProcessor = new AIBatchProcessor(
+        this.cacheService,
+        settings?.openaiApiKey,
+        {
+          maxBatchSize: this.config.batchSize,
+          maxConcurrentBatches: this.config.maxConcurrentBatches,
+          rateLimitRpm: this.config.rateLimitRpm
+        }
+      );
+
+      // Set up event listeners for monitoring
+      this.setupEventListeners();
+
+      logger.info('enhanced-matching', 'Enhanced sequential matching service initialized', {
+        cacheEnabled: true,
+        batchEnabled: true,
+        ...this.config
+      });
+
+    } catch (error) {
+      logger.error('enhanced-matching', 'Failed to initialize enhanced services', error as Error);
+    }
+  }
+
+  /**
+   * Enhanced single product matching with caching
+   */
+  async performEnhancedMatch(
+    competitor: CompetitorProduct,
+    ourProducts: OurProduct[],
+    useCache: boolean = true
+  ): Promise<SequentialMatchResult> {
+    const startTime = Date.now();
+    this.stats.totalMatches++;
+
+    try {
+      // Check cache first if enabled
+      if (useCache && this.cacheService) {
+        const cacheKey = this.cacheService.generateCacheKey(competitor, ourProducts);
+        const cached = await this.cacheService.getCachedResponse(cacheKey);
+        
+        if (cached) {
+          this.stats.cacheHits++;
+          this.recordMatchTime(Date.now() - startTime);
+          
+          logger.debug('enhanced-matching', 'Cache hit for competitor', {
+            sku: competitor.sku,
+            company: competitor.company,
+            cacheAge: Date.now() - cached.created_at.getTime()
+          });
+
+          return this.createResultFromCache(cached, competitor);
+        }
+        
+        this.stats.cacheMisses++;
+      }
+
+      // Fall back to original sequential matching
+      const result = await super.performSequentialMatch(competitor, ourProducts);
+      
+      // Cache the result if it was successful and AI-enhanced
+      if (useCache && this.cacheService && result.matchingStage === 'ai_enhanced' && result.matches.length > 0) {
+        const cacheKey = this.cacheService.generateCacheKey(competitor, ourProducts);
+        await this.cacheService.setCachedResponse(cacheKey, competitor, result);
+        
+        logger.debug('enhanced-matching', 'AI result cached', {
+          sku: competitor.sku,
+          confidence: result.confidence
+        });
+      }
+
+      this.recordMatchTime(Date.now() - startTime);
+      return result;
+
+    } catch (error) {
+      logger.error('enhanced-matching', 'Enhanced matching failed', error as Error, {
+        competitorSku: competitor.sku
+      });
+      
+      // Return failed result
+      return {
+        competitor,
+        matches: [],
+        matchingStage: 'failed',
+        confidence: 0,
+        processingSteps: [`Error: ${(error as Error).message}`]
+      };
+    }
+  }
+
+  /**
+   * Batch process multiple competitors with intelligent caching and batching
+   */
+  async processBatch(
+    competitors: CompetitorProduct[],
+    ourProducts: OurProduct[],
+    priority: 'low' | 'normal' | 'high' = 'normal'
+  ): Promise<string> {
+    logger.info('enhanced-matching', 'Starting batch processing', {
+      competitorCount: competitors.length,
+      priority,
+      batchSize: this.config.batchSize
+    });
+
+    this.stats.batchProcessed += competitors.length;
+
+    // Submit to batch processor
+    if (!this.batchProcessor) {
+      throw new Error('Batch processor not initialized');
+    }
+    const jobId = await this.batchProcessor.submitBatch(competitors, ourProducts, priority);
+    
+    return jobId;
+  }
+
+  /**
+   * Get batch job status and results
+   */
+  getBatchJob(jobId: string) {
+    return this.batchProcessor?.getJob(jobId);
+  }
+
+  /**
+   * Cancel a batch job
+   */
+  async cancelBatch(jobId: string): Promise<boolean> {
+    return this.batchProcessor ? await this.batchProcessor.cancelJob(jobId) : false;
+  }
+
+  /**
+   * Warm the cache with frequently accessed competitors
+   */
+  async warmCache(
+    competitors: CompetitorProduct[],
+    ourProducts: OurProduct[]
+  ): Promise<number> {
+    if (!this.config.enableCacheWarming) {
+      logger.info('enhanced-matching', 'Cache warming disabled');
+      return 0;
+    }
+
+    logger.info('enhanced-matching', 'Starting cache warming', {
+      competitorCount: competitors.length
+    });
+
+    const warmedCount = this.cacheService ? await this.cacheService.warmCache(competitors, ourProducts) : 0;
+    
+    logger.info('enhanced-matching', 'Cache warming completed', {
+      warmedCount,
+      cacheHitRateImprovement: this.calculateCacheHitRate()
+    });
+
+    return warmedCount;
+  }
+
+  /**
+   * Get comprehensive matching statistics
+   */
+  async getEnhancedStats(): Promise<{
+    matching: MatchingStats;
+    cache: any;
+    batch: any;
+  }> {
+    const cacheStats = this.cacheService ? await this.cacheService.getCacheStats() : {};
+    const batchStats = this.batchProcessor ? this.batchProcessor.getStats() : {};
+
+    // Update calculated stats
+    this.stats.averageMatchTime = this.calculateAverageMatchTime();
+    this.stats.successRate = this.calculateSuccessRate();
+    this.stats.costSaved = this.estimateCostSaved();
+
+    return {
+      matching: { ...this.stats },
+      cache: cacheStats,
+      batch: batchStats
+    };
+  }
+
+  /**
+   * Performance optimization: Preload cache for known patterns
+   */
+  async optimizeForPatterns(
+    commonCompetitors: CompetitorProduct[],
+    ourProducts: OurProduct[]
+  ): Promise<void> {
+    logger.info('enhanced-matching', 'Optimizing for common patterns', {
+      patternCount: commonCompetitors.length
+    });
+
+    // Process common patterns in background
+    await this.processBatch(commonCompetitors, ourProducts, 'low');
+  }
+
+  // Private helper methods
+
+  private setupEventListeners(): void {
+    if (!this.batchProcessor) return;
+    
+    this.batchProcessor.on('jobCompleted', (event) => {
+      logger.info('enhanced-matching', 'Batch job completed', {
+        jobId: event.jobId,
+        totalProducts: event.job.competitors.length,
+        successCount: event.job.progress.completed,
+        cacheHits: event.job.progress.cached
+      });
+    });
+
+      this.batchProcessor.on('jobFailed', (event) => {
+        logger.error('enhanced-matching', 'Batch job failed', event.error as Error, {
+          jobId: event.jobId,
+          totalProducts: event.job.competitors.length
+        });
+      });
+
+      this.batchProcessor.on('jobProgress', (event) => {
+        if (this.config.logPerformanceMetrics) {
+          logger.debug('enhanced-matching', 'Batch progress', {
+            jobId: event.jobId,
+            progress: `${event.progress.completed}/${event.progress.total}`,
+            eta: event.estimatedTimeRemaining
+          });
+        }
+      });
+    }
+  }
+
+  private createResultFromCache(cached: any, competitor: CompetitorProduct): SequentialMatchResult {
+    return {
+      competitor,
+      matches: [{
+        ourSku: cached.our_sku || '',
+        ourProduct: {} as any, // Would need to fetch from database
+        confidence: cached.confidence,
+        matchMethod: cached.match_method as any,
+        reasoning: cached.reasoning
+      }],
+      matchingStage: 'ai_enhanced',
+      confidence: cached.confidence,
+      processingSteps: [
+        'Retrieved from cache',
+        `Cache age: ${Math.round((Date.now() - cached.created_at.getTime()) / (1000 * 60 * 60))} hours`
+      ]
+    };
+  }
+
+  private recordMatchTime(timeMs: number): void {
+    this.performanceTimes.push(timeMs);
+    
+    // Keep only last 1000 times for memory efficiency
+    if (this.performanceTimes.length > 1000) {
+      this.performanceTimes.shift();
+    }
+  }
+
+  private calculateAverageMatchTime(): number {
+    if (this.performanceTimes.length === 0) return 0;
+    return this.performanceTimes.reduce((sum, time) => sum + time, 0) / this.performanceTimes.length;
+  }
+
+  private calculateCacheHitRate(): number {
+    const total = this.stats.cacheHits + this.stats.cacheMisses;
+    return total > 0 ? (this.stats.cacheHits / total) * 100 : 0;
+  }
+
+  private calculateSuccessRate(): number {
+    // This would be calculated based on successful matches vs total attempts
+    return this.stats.totalMatches > 0 ? 85 : 0; // Placeholder
+  }
+
+  private estimateCostSaved(): number {
+    // Estimate cost saved through caching (assuming $0.02 per AI call)
+    return this.stats.cacheHits * 0.02;
+  }
+
+  private async getEnhancedSettings(): Promise<any> {
+    try {
+      const { app } = require('electron');
+      const fs = require('fs');
+      const path = require('path');
+      const settingsPath = path.join(app.getPath('userData'), 'settings.json');
+      
+      if (fs.existsSync(settingsPath)) {
+        const data = fs.readFileSync(settingsPath, 'utf8');
+        return JSON.parse(data);
+      }
+    } catch (error) {
+      logger.error('enhanced-matching', 'Failed to load settings', error as Error);
+    }
+    return null;
+  }
+}
