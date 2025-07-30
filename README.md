@@ -1,3 +1,30 @@
+# HVAC Price Analyzer
+
+A powerful desktop application for HVAC product crosswalk matching and price analysis. Uses advanced AI and sequential matching algorithms to find equivalent products across different manufacturers.
+
+## Download & Installation
+
+### Windows
+- [Download Windows Installer (.exe)](https://github.com/jbabcanec/Comp-Price-Bot/releases/latest)
+- [Download Portable Version (.exe)](https://github.com/jbabcanec/Comp-Price-Bot/releases/latest)
+
+### macOS
+- [Download for macOS (.dmg)](https://github.com/jbabcanec/Comp-Price-Bot/releases/latest)
+
+### Linux
+- [Download AppImage (.AppImage)](https://github.com/jbabcanec/Comp-Price-Bot/releases/latest)
+- [Download DEB Package (.deb)](https://github.com/jbabcanec/Comp-Price-Bot/releases/latest)
+
+## Quick Start
+
+1. **Download** the installer for your platform above
+2. **Install** and launch the application
+3. **Configure** your OpenAI API key in Settings
+4. **Import** your price book in "Our Files" section  
+5. **Process** competitor files by dragging and dropping
+
+---
+
 # HVAC SKU Crosswalk Matching Engine
 
 ## Overview

@@ -18,7 +18,15 @@
     "test:coverage": "jest --config configs/jest/jest.config.js --coverage",
     "lint": "eslint src tests --ext .ts,.tsx",
     "typecheck": "tsc --noEmit",
-    "demo:openai": "ts-node examples/openai-demo.ts"
+    "demo:openai": "ts-node examples/openai-demo.ts",
+    "build:prod": "npm run build && npm run dist",
+    "dist": "electron-builder",
+    "dist:win": "electron-builder --win",
+    "dist:mac": "electron-builder --mac",
+    "dist:linux": "electron-builder --linux",
+    "dist:all": "electron-builder --win --mac --linux",
+    "release": "npm run build:prod && npm run publish",
+    "publish": "electron-builder --publish=always"
   },
   "keywords": [
     "hvac",
@@ -48,6 +56,7 @@
     "css-loader": "^6.11.0",
     "dotenv": "^17.2.1",
     "electron": "^27.3.11",
+    "electron-builder": "^26.0.12",
     "eslint": "^8.57.1",
     "eslint-config-prettier": "^9.1.2",
     "eslint-plugin-prettier": "^5.5.3",
@@ -74,6 +83,7 @@
   },
   "dependencies": {
     "electron-store": "^8.2.0",
+    "electron-updater": "^6.6.2",
     "eml-parser": "^2.0.4",
     "jszip": "^3.10.1",
     "mailparser": "^3.7.4",
@@ -89,5 +99,99 @@
     "tesseract.js": "^6.0.1",
     "xlsx": "^0.18.5",
     "yauzl": "^3.2.0"
+  },
+  "build": {
+    "appId": "com.babcanec.hvac-price-analyzer",
+    "productName": "HVAC Price Analyzer",
+    "copyright": "Copyright © 2025 Joseph Babcanec",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "dist/**/*",
+      "node_modules/**/*",
+      "!node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme}",
+      "!node_modules/*/{test,__tests__,tests,powered-test,example,examples}",
+      "!node_modules/*.d.ts",
+      "!node_modules/.bin",
+      "!**/*.{iml,o,hprof,orig,pyc,pyo,rbc,swp,csproj,sln,xproj}",
+      "!.editorconfig",
+      "!**/._*",
+      "!**/{.DS_Store,.git,.hg,.svn,CVS,RCS,SCCS,.gitignore,.gitattributes}",
+      "!**/{__pycache__,thumbs.db,.flowconfig,.idea,.vs,.nyc_output}",
+      "!**/{appveyor.yml,.travis.yml,circle.yml}",
+      "!**/{npm-debug.log,yarn.lock,.yarn-integrity,.yarn-metadata.json}"
+    ],
+    "extraResources": [
+      {
+        "from": "resources",
+        "to": "resources",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "verifyUpdateCodeSignature": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "deleteAppDataOnUninstall": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "HVAC Price Analyzer"
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
+      "category": "public.app-category.productivity"
+    },
+    "linux": {
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "deb",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "category": "Office"
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "jbabcanec",
+      "repo": "Comp-Price-Bot",
+      "private": false
+    }
   }
 }
