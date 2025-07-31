@@ -41,7 +41,7 @@ export interface ProcessorConfig {
 }
 
 export class HyperEfficientBatchProcessor {
-  private readonly ajv: Ajv;
+  private readonly ajv: any;
   private readonly cacheService: AICacheService;
   private readonly config: ProcessorConfig;
   private readonly memoryMonitor: MemoryMonitor;
@@ -70,7 +70,6 @@ export class HyperEfficientBatchProcessor {
     // Initialize JSON schema validator
     this.ajv = new Ajv({ 
       allErrors: true, 
-      strict: true,
       removeAdditional: true // Automatically remove invalid properties
     });
     addFormats(this.ajv);

@@ -37,11 +37,11 @@ export interface NormalizationContext {
 }
 
 export class ResultNormalizerService {
-  private readonly ajv: Ajv;
+  private readonly ajv: any;
   private readonly validator: any;
 
   constructor() {
-    this.ajv = new Ajv({ allErrors: true, strict: false });
+    this.ajv = new Ajv({ allErrors: true });
     addFormats(this.ajv);
     this.validator = this.ajv.compile(STANDARDIZED_MATCH_SCHEMA);
   }

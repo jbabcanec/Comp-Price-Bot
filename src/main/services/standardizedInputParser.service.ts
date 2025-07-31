@@ -155,7 +155,7 @@ const COMPETITOR_INPUT_SCHEMA = {
 } as const;
 
 export class StandardizedInputParserService {
-  private readonly ajv: Ajv;
+  private readonly ajv: any;
   private readonly validator: any;
   private readonly config: ParserConfig;
 
@@ -173,7 +173,6 @@ export class StandardizedInputParserService {
     // Initialize JSON schema validator
     this.ajv = new Ajv({ 
       allErrors: true, 
-      strict: false,
       removeAdditional: 'failing', // Remove invalid properties
       coerceTypes: true // Auto-convert compatible types
     });
