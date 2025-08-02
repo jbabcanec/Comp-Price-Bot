@@ -24,6 +24,18 @@ interface EditingCell {
   field: string;
 }
 
+/**
+ * Database page component for managing SKU crosswalk mappings.
+ * Displays and manages the relationship between competitor SKUs and our equivalent products.
+ * 
+ * Features:
+ * - View all crosswalk mapping records
+ * - Edit mapping details inline
+ * - Delete individual or multiple mappings
+ * - Export mappings to CSV
+ * - Complete database purge with confirmation
+ * - Sort and search functionality
+ */
 export const Database: React.FC = () => {
   const [records, setRecords] = useState<CrosswalkRecord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -33,60 +45,46 @@ export const Database: React.FC = () => {
   const [sortField, setSortField] = useState<keyof CrosswalkRecord>('created_at');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
 
-  // Mock crosswalk data for now - in Phase 2 this will connect to actual database
+  // Load real crosswalk data from database
   useEffect(() => {
-    const mockData: CrosswalkRecord[] = [
-      {
-        id: 1,
-        competitor_sku: 'TRN-XR16-024-230',
-        competitor_company: 'Trane',
-        competitor_price: 2850.00,
-        competitor_price_date: '2024-01-15',
-        our_sku: 'LEN-XC16-024-230',
-        our_model: 'XC16-024-230',
-        confidence: 0.95,
-        match_method: 'exact_model',
-        verified: true,
-        verified_by: 'John Smith',
-        verified_at: '2024-01-15T14:30:00Z',
-        created_at: '2024-01-15T10:30:00Z',
-        updated_at: '2024-01-15T14:30:00Z'
-      },
-      {
-        id: 2,
-        competitor_sku: 'CAR-25HCB636A003',
-        competitor_company: 'Carrier',
-        competitor_price: 3200.00,
-        competitor_price_date: '2024-01-16',
-        our_sku: 'LEN-XP16-036-230',
-        our_model: 'XP16-036-230',
-        confidence: 0.87,
-        match_method: 'ai_specs',
-        verified: false,
-        notes: 'Similar tonnage and SEER, needs verification',
-        created_at: '2024-01-16T09:15:00Z'
-      },
-      {
-        id: 3,
-        competitor_sku: 'YRK-YP9C100B32UP13',
-        competitor_company: 'York',
-        competitor_price: 1450.00,
-        competitor_price_date: '2024-01-17',
-        our_sku: 'LEN-SL280-080',
-        our_model: 'SL280-080',
-        confidence: 0.72,
-        match_method: 'ai_fuzzy',
-        verified: false,
-        notes: 'Low confidence match - review manually',
-        created_at: '2024-01-17T11:20:00Z'
-      }
-    ];
-    
-    setTimeout(() => {
-      setRecords(mockData);
-      setLoading(false);
-    }, 500);
+    loadRecords();
   }, []);
+
+  const loadRecords = async () => {
+    setLoading(true);
+    try {
+      const response = await window.electronAPI.database.mappings.findAll();
+      if (response.success) {
+        // Convert database format to display format
+        const mappedRecords: CrosswalkRecord[] = (response.data || []).map((mapping: any) => ({
+          id: mapping.id,
+          competitor_sku: mapping.competitor_sku,
+          competitor_company: mapping.competitor_company,
+          competitor_price: mapping.competitor_price,
+          competitor_price_date: mapping.competitor_price_date,
+          our_sku: mapping.our_sku,
+          our_model: mapping.our_model,
+          confidence: mapping.confidence,
+          match_method: mapping.match_method,
+          verified: mapping.verified,
+          verified_by: mapping.verified_by,
+          verified_at: mapping.verified_at,
+          notes: mapping.notes,
+          created_at: mapping.created_at,
+          updated_at: mapping.updated_at
+        }));
+        setRecords(mappedRecords);
+      } else {
+        console.error('Failed to load mappings:', response.error);
+        setRecords([]);
+      }
+    } catch (error) {
+      console.error('Error loading mappings:', error);
+      setRecords([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSort = (field: keyof CrosswalkRecord) => {
     const direction = field === sortField && sortDirection === 'asc' ? 'desc' : 'asc';
@@ -114,20 +112,37 @@ export const Database: React.FC = () => {
     setEditValue(currentValue?.toString() || '');
   };
 
-  const handleCellSave = () => {
+  const handleCellSave = async () => {
     if (!editingCell) return;
     
-    setRecords(prev => prev.map(record => {
-      if (record.id === editingCell.rowId) {
-        const updatedRecord = {
-          ...record,
-          [editingCell.field]: editValue,
-          updated_at: new Date().toISOString()
-        };
-        return updatedRecord;
+    try {
+      const updateData = {
+        id: editingCell.rowId,
+        [editingCell.field]: editValue
+      };
+      
+      const response = await window.electronAPI.database.mappings.update(updateData);
+      
+      if (response.success) {
+        // Update the local records state
+        setRecords(prev => prev.map(record => {
+          if (record.id === editingCell.rowId) {
+            return {
+              ...record,
+              [editingCell.field]: editValue,
+              updated_at: new Date().toISOString()
+            };
+          }
+          return record;
+        }));
+      } else {
+        console.error('Failed to update record:', response.error);
+        alert('Failed to update record: ' + (response.error?.message || 'Unknown error'));
       }
-      return record;
-    }));
+    } catch (error) {
+      console.error('Error updating record:', error);
+      alert('Error updating record: ' + (error instanceof Error ? error.message : 'Unknown error'));
+    }
     
     setEditingCell(null);
     setEditValue('');
@@ -166,16 +181,38 @@ export const Database: React.FC = () => {
     }
   };
 
-  const deleteSelectedRows = () => {
+  const deleteSelectedRows = async () => {
     if (selectedRows.size === 0) return;
     
     if (confirm(`Delete ${selectedRows.size} selected record(s)?`)) {
-      setRecords(prev => prev.filter(record => !selectedRows.has(record.id)));
-      setSelectedRows(new Set());
+      try {
+        const deletePromises = Array.from(selectedRows).map(id =>
+          window.electronAPI.database.mappings.delete(id)
+        );
+        
+        const results = await Promise.all(deletePromises);
+        const failedDeletes = results.filter((result: any) => !result.success);
+        
+        if (failedDeletes.length > 0) {
+          console.error('Some deletes failed:', failedDeletes);
+          alert(`Failed to delete ${failedDeletes.length} record(s). Check console for details.`);
+        }
+        
+        // Remove successfully deleted records from local state
+        setRecords(prev => prev.filter(record => !selectedRows.has(record.id)));
+        setSelectedRows(new Set());
+        
+        if (failedDeletes.length === 0) {
+          alert(`Successfully deleted ${selectedRows.size} record(s).`);
+        }
+      } catch (error) {
+        console.error('Error deleting records:', error);
+        alert('Error deleting records: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      }
     }
   };
 
-  const handlePurgeDatabase = () => {
+  const handlePurgeDatabase = async () => {
     if (records.length === 0) return;
     
     const confirmed = confirm(
@@ -190,15 +227,36 @@ export const Database: React.FC = () => {
       if (doubleConfirmed) {
         const finalConfirmation = prompt('Type "DELETE ALL" to confirm purging the entire database:');
         if (finalConfirmation === 'DELETE ALL') {
-          setRecords([]);
-          setSelectedRows(new Set());
-          alert('Database has been purged. All crosswalk records have been deleted.');
+          try {
+            const response = await window.electronAPI.invoke('db:purgeAllData');
+            
+            if (response.success) {
+              setRecords([]);
+              setSelectedRows(new Set());
+              const { totalDeleted, breakdown } = response.data;
+              alert(
+                `Database has been purged successfully!\n\n` +
+                `Total records deleted: ${totalDeleted}\n` +
+                `• History: ${breakdown.history}\n` +
+                `• Mappings: ${breakdown.mappings}\n` +
+                `• Competitor Data: ${breakdown.competitorData}\n` +
+                `• Products: ${breakdown.products}`
+              );
+            } else {
+              console.error('Failed to purge database:', response.error);
+              alert('Failed to purge database: ' + response.error.message);
+            }
+          } catch (error) {
+            console.error('Error purging database:', error);
+            alert('Error purging database: ' + (error instanceof Error ? error.message : 'Unknown error'));
+          }
         } else {
           alert('Purge cancelled - confirmation text did not match.');
         }
       }
     }
   };
+
 
   const handleExportToCSV = () => {
     if (records.length === 0) {
@@ -493,6 +551,7 @@ export const Database: React.FC = () => {
           </tbody>
         </table>
       </div>
+
     </div>
   );
 };

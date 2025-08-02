@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HVAC Price Analyzer - Professional HVAC Pricing & Analysis Tool</title>
+    <meta name="description" content="Revolutionary desktop app for HVAC professionals. AI-powered product matching, competitive pricing analysis, and automated workflows. Download for Windows, Mac, and Linux.">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://jbabcanec.github.io/Comp-Price-Bot/">
+    <meta property="og:title" content="HVAC Price Analyzer - AI-Powered HVAC Analysis Tool">
+    <meta property="og:description" content="Professional desktop application for HVAC pricing analysis with 87.2% AI matching accuracy. Support for Excel, PDF, images, and email processing.">
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://jbabcanec.github.io/Comp-Price-Bot/">
+    <meta property="twitter:title" content="HVAC Price Analyzer - AI-Powered HVAC Analysis Tool">
+    <meta property="twitter:description" content="Professional desktop application for HVAC pricing analysis with 87.2% AI matching accuracy.">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <h1>HVAC Price Analyzer</h1>
+                <span class="version">v1.0.0</span>
+            </div>
+            <div class="nav-links">
+                <a href="#features">Features</a>
+                <a href="#download">Download</a>
+                <a href="#support">Support</a>
+                <a href="https://github.com/jbabcanec/Comp-Price-Bot" target="_blank">GitHub</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-container">
+            <div class="hero-content">
+                <h1 class="hero-title">
+                    Professional HVAC<br>
+                    <span class="gradient-text">Price Analysis</span><br>
+                    Made Simple
+                </h1>
+                <p class="hero-description">
+                    Revolutionary desktop application powered by AI for HVAC professionals. 
+                    Analyze competitor pricing, match products with 87.2% accuracy, and streamline your workflow with automated data processing.
+                </p>
+                <div class="hero-stats">
+                    <div class="stat">
+                        <span class="stat-number">87.2%</span>
+                        <span class="stat-label">AI Matching Accuracy</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-number">15+</span>
+                        <span class="stat-label">File Formats Supported</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-number">3</span>
+                        <span class="stat-label">Platforms Supported</span>
+                    </div>
+                </div>
+                <div class="hero-cta">
+                    <button class="btn-primary" onclick="scrollToDownload()">
+                        Download Now
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="7,10 12,15 17,10"></polyline>
+                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                        </svg>
+                    </button>
+                    <a href="#features" class="btn-secondary">Learn More</a>
+                </div>
+            </div>
+            <div class="hero-image">
+                <div class="app-preview">
+                    <div class="app-window">
+                        <div class="window-header">
+                            <div class="window-controls">
+                                <div class="control close"></div>
+                                <div class="control minimize"></div>
+                                <div class="control maximize"></div>
+                            </div>
+                            <div class="window-title">HVAC Price Analyzer</div>
+                        </div>
+                        <div class="window-content">
+                            <div class="app-sidebar">
+                                <div class="nav-item active">Dashboard</div>
+                                <div class="nav-item">Upload</div>
+                                <div class="nav-item">Products</div>
+                                <div class="nav-item">History</div>
+                                <div class="nav-item">Settings</div>
+                            </div>
+                            <div class="app-main">
+                                <div class="upload-area">
+                                    <div class="upload-icon">📄</div>
+                                    <p>Drag & drop files or click to browse</p>
+                                    <div class="file-types">Excel • PDF • Images • Emails</div>
+                                </div>
+                                <div class="results-preview">
+                                    <div class="result-row">
+                                        <span class="product">Carrier 24ABC636A003</span>
+                                        <span class="match">98.5% Match</span>
+                                        <span class="price">$2,450</span>
+                                    </div>
+                                    <div class="result-row">
+                                        <span class="product">Trane XL16i</span>
+                                        <span class="match">94.2% Match</span>
+                                        <span class="price">$2,780</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="features">
+        <div class="container">
+            <div class="section-header">
+                <h2>Powerful Features for HVAC Professionals</h2>
+                <p>Everything you need to analyze competitor pricing and streamline your workflow</p>
+            </div>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">🤖</div>
+                    <h3>AI-Powered Matching</h3>
+                    <p>Advanced GPT-4 integration with 87.2% accuracy for product identification and competitive analysis.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">📊</div>
+                    <h3>Multi-Format Support</h3>
+                    <p>Process Excel files, PDFs, images, emails, and more. Seamless integration with your existing workflow.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">⚡</div>
+                    <h3>Batch Processing</h3>
+                    <p>Handle multiple files simultaneously with intelligent caching and parallel processing for maximum efficiency.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🔍</div>
+                    <h3>Advanced Analytics</h3>
+                    <p>Detailed insights, confidence scores, and comprehensive reporting to make informed pricing decisions.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🛡️</div>
+                    <h3>Secure & Private</h3>
+                    <p>All data processing happens locally on your machine. Your sensitive business data never leaves your computer.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🔄</div>
+                    <h3>Auto-Updates</h3>
+                    <p>Automatic updates ensure you always have the latest features and improvements without manual intervention.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Download Section -->
+    <section id="download" class="download">
+        <div class="container">
+            <div class="section-header">
+                <h2>Download HVAC Price Analyzer</h2>
+                <p>Choose your platform and get started in minutes</p>
+            </div>
+            
+            <div class="download-platforms">
+                <!-- Windows -->
+                <div class="platform-card">
+                    <div class="platform-icon">🪟</div>
+                    <h3>Windows</h3>
+                    <p>Windows 10, 11 (64-bit)</p>
+                    <div class="download-options">
+                        <button class="download-btn primary" data-platform="windows" data-type="installer">
+                            <span>Download Installer</span>
+                            <small>Recommended • ~111MB</small>
+                        </button>
+                        <button class="download-btn secondary" data-platform="windows" data-type="portable">
+                            <span>Portable Version</span>
+                            <small>No installation required</small>
+                        </button>
+                        <button class="download-btn secondary" data-platform="windows" data-type="zip">
+                            <span>ZIP Archive</span>
+                            <small>Manual installation</small>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- macOS -->
+                <div class="platform-card">
+                    <div class="platform-icon">🍎</div>
+                    <h3>macOS</h3>
+                    <p>macOS 10.15+ (Intel & Apple Silicon)</p>
+                    <div class="download-options">
+                        <button class="download-btn primary" data-platform="mac" data-type="dmg">
+                            <span>Download DMG</span>
+                            <small>Recommended • ~149MB</small>
+                        </button>
+                        <button class="download-btn secondary" data-platform="mac" data-type="zip-intel">
+                            <span>ZIP (Intel)</span>
+                            <small>Manual installation</small>
+                        </button>
+                        <button class="download-btn secondary" data-platform="mac" data-type="zip-arm">
+                            <span>ZIP (Apple Silicon)</span>
+                            <small>M1/M2 Macs</small>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Linux -->
+                <div class="platform-card">
+                    <div class="platform-icon">🐧</div>
+                    <h3>Linux</h3>
+                    <p>Ubuntu, Debian, and derivatives</p>
+                    <div class="download-options">
+                        <button class="download-btn primary" data-platform="linux" data-type="appimage">
+                            <span>AppImage</span>
+                            <small>Universal Linux • Portable</small>
+                        </button>
+                        <button class="download-btn secondary" data-platform="linux" data-type="deb">
+                            <span>DEB Package</span>
+                            <small>Ubuntu/Debian</small>
+                        </button>
+                    </div>
+                    <p class="platform-note">Coming soon! Windows and macOS versions available now.</p>
+                </div>
+            </div>
+
+            <div class="system-requirements">
+                <h3>System Requirements</h3>
+                <div class="requirements-grid">
+                    <div class="req-item">
+                        <strong>RAM:</strong> 4GB minimum, 8GB recommended
+                    </div>
+                    <div class="req-item">
+                        <strong>Storage:</strong> 1GB free space
+                    </div>
+                    <div class="req-item">
+                        <strong>Network:</strong> Internet connection for AI processing
+                    </div>
+                    <div class="req-item">
+                        <strong>API Key:</strong> OpenAI API key required
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Support Section -->
+    <section id="support" class="support">
+        <div class="container">
+            <div class="section-header">
+                <h2>Get Started & Support</h2>
+                <p>Everything you need to get up and running</p>
+            </div>
+            <div class="support-grid">
+                <div class="support-card">
+                    <div class="support-icon">📖</div>
+                    <h3>Installation Guide</h3>
+                    <p>Step-by-step instructions for all platforms with troubleshooting tips.</p>
+                    <a href="https://github.com/jbabcanec/Comp-Price-Bot/blob/main/INSTALLATION.md" class="support-link">View Guide →</a>
+                </div>
+                <div class="support-card">
+                    <div class="support-icon">💬</div>
+                    <h3>GitHub Issues</h3>
+                    <p>Report bugs, request features, or get help from the community.</p>
+                    <a href="https://github.com/jbabcanec/Comp-Price-Bot/issues" class="support-link">Get Help →</a>
+                </div>
+                <div class="support-card">
+                    <div class="support-icon">🔧</div>
+                    <h3>Source Code</h3>
+                    <p>Open source project. View code, contribute, or fork for your needs.</p>
+                    <a href="https://github.com/jbabcanec/Comp-Price-Bot" class="support-link">View Code →</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-left">
+                    <h3>HVAC Price Analyzer</h3>
+                    <p>Professional HVAC pricing analysis made simple.</p>
+                    <div class="footer-links">
+                        <a href="https://github.com/jbabcanec/Comp-Price-Bot">GitHub</a>
+                        <a href="https://github.com/jbabcanec/Comp-Price-Bot/releases">Releases</a>
+                        <a href="https://github.com/jbabcanec/Comp-Price-Bot/issues">Support</a>
+                    </div>
+                </div>
+                <div class="footer-right">
+                    <p>&copy; 2025 Joseph Babcanec. Open source under MIT License.</p>
+                    <p>Made with ❤️ for HVAC professionals</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>

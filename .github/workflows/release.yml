@@ -1,0 +1,148 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version tag (e.g., v1.0.0)'
+        required: true
+        default: 'v1.0.0'
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build application
+        run: npm run build
+
+      - name: Build distributables (Windows)
+        if: matrix.os == 'windows-latest'
+        run: npm run package:win
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build distributables (macOS)
+        if: matrix.os == 'macos-latest'
+        run: npm run package:mac
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build distributables (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: npm run package:linux
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Windows artifacts
+        if: matrix.os == 'windows-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-builds
+          path: |
+            release/*.exe
+            release/*.zip
+
+      - name: Upload macOS artifacts
+        if: matrix.os == 'macos-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-builds
+          path: |
+            release/*.dmg
+            release/*.zip
+
+      - name: Upload Linux artifacts
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-builds
+          path: |
+            release/*.AppImage
+            release/*.deb
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download Windows artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-builds
+          path: ./artifacts/windows
+
+      - name: Download macOS artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: macos-builds
+          path: ./artifacts/macos
+
+      - name: Download Linux artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: linux-builds
+          path: ./artifacts/linux
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.event.inputs.version || github.ref_name }}
+          name: HVAC Price Analyzer ${{ github.event.inputs.version || github.ref_name }}
+          draft: false
+          prerelease: false
+          body: |
+            ## Installation Instructions
+
+            ### Windows
+            1. Download `HVAC-Price-Analyzer-Setup-*.exe` for installer
+            2. Or download `HVAC-Price-Analyzer-*.exe` for portable version
+            3. Or download `HVAC-Price-Analyzer-win32-x64-*.zip` for manual installation
+
+            ### macOS
+            1. Download `HVAC-Price-Analyzer-*.dmg` for installer
+            2. Or download `HVAC-Price-Analyzer-darwin-*.zip` for manual installation
+
+            ### Linux
+            1. Download `HVAC-Price-Analyzer-*.AppImage` for portable version
+            2. Or download `hvac-price-analyzer_*_amd64.deb` for Debian/Ubuntu
+
+            ### Manual Installation (ZIP files)
+            1. Download the appropriate ZIP file for your platform
+            2. Extract to desired location
+            3. Run `npm install` in the extracted directory
+            4. Run `npm start` to launch the application
+
+            ## What's New
+            - Fixed SQLite3 native module issues
+            - Cross-platform compatibility improvements
+            - Enhanced build and distribution system
+
+          files: |
+            ./artifacts/windows/*
+            ./artifacts/macos/*
+            ./artifacts/linux/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

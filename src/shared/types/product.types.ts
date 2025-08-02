@@ -3,8 +3,9 @@
  * Updated for Phase 2: Product Management implementation
  */
 
-export type ProductType = 'AC' | 'Heat Pump' | 'Furnace' | 'Air Handler';
-export type StageType = 'single' | 'two-stage' | 'variable';
+// Allow any product type for flexibility - real price books have many equipment types
+export type ProductType = string;
+export type StageType = 'single' | 'two-stage' | 'variable' | string;
 
 /**
  * Main product interface - represents YOUR product catalog

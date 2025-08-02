@@ -3,6 +3,7 @@ import { OpenAIProductExtractor } from '@shared/services/openai-extractor';
 import { ExtractedData } from '@shared/types/product.types';
 import { logger } from './logger.service';
 import { createWorker } from 'tesseract.js';
+import * as path from 'path';
 
 /**
  * Supercharged File Processor with AI/ML fallbacks
@@ -34,41 +35,53 @@ export class SuperchargedFileProcessor {
     let bestResult: ProcessingResult;
     
     try {
-      // Strategy 1: Base processor (with existing OCR and traditional parsing)
-      logger.debug('supercharged-processor', 'Trying base processor');
-      bestResult = await this.baseProcessor.processFile(filePath, true); // Force use OpenAI if available
+      // Check if this is a price book file (structured CSV/Excel)
+      const fileName = path.basename(filePath).toLowerCase();
+      const isPriceBook = fileName.includes('price') && 
+                         (filePath.endsWith('.csv') || filePath.endsWith('.xlsx') || filePath.endsWith('.xls'));
       
-      // Strategy 2: Enhanced AI processing if base didn't find much
-      if (this.shouldTryAIFallback(bestResult)) {
-        logger.debug('supercharged-processor', 'Base result insufficient, trying AI fallback');
-        const aiResult = await this.processWithAIFallback(filePath);
-        
-        if (this.isBetterResult(aiResult, bestResult)) {
-          bestResult = aiResult;
-          logger.info('supercharged-processor', 'AI fallback produced better results');
-        }
-      }
+      // Strategy 1: Base processor 
+      logger.debug('supercharged-processor', 'Trying base processor', { isPriceBook });
       
-      // Strategy 3: Multi-confidence processing
-      if (this.shouldTryMultiConfidence(bestResult)) {
-        logger.debug('supercharged-processor', 'Trying multi-confidence extraction');
-        const multiResult = await this.processWithMultiConfidence(filePath);
-        
-        if (this.isBetterResult(multiResult, bestResult)) {
-          bestResult = multiResult;
-          logger.info('supercharged-processor', 'Multi-confidence produced better results');
-        }
-      }
+      // For price books, NEVER use OpenAI - it's already structured data
+      bestResult = await this.baseProcessor.processFile(filePath, !isPriceBook);
       
-      // Strategy 4: Enhanced OCR for images
-      if (this.isImageFile(filePath) && this.shouldTryEnhancedOCR(bestResult)) {
-        logger.debug('supercharged-processor', 'Trying enhanced OCR for image');
-        const ocrResult = await this.processWithEnhancedOCR(filePath);
-        
-        if (this.isBetterResult(ocrResult, bestResult)) {
-          bestResult = ocrResult;
-          logger.info('supercharged-processor', 'Enhanced OCR produced better results');
+      // Skip all AI processing for price book files - they're already structured
+      if (!isPriceBook) {
+        // Strategy 2: Enhanced AI processing if base didn't find much
+        if (this.shouldTryAIFallback(bestResult)) {
+          logger.debug('supercharged-processor', 'Base result insufficient, trying AI fallback');
+          const aiResult = await this.processWithAIFallback(filePath);
+          
+          if (this.isBetterResult(aiResult, bestResult)) {
+            bestResult = aiResult;
+            logger.info('supercharged-processor', 'AI fallback produced better results');
+          }
         }
+        
+        // Strategy 3: Multi-confidence processing
+        if (this.shouldTryMultiConfidence(bestResult)) {
+          logger.debug('supercharged-processor', 'Trying multi-confidence extraction');
+          const multiResult = await this.processWithMultiConfidence(filePath);
+          
+          if (this.isBetterResult(multiResult, bestResult)) {
+            bestResult = multiResult;
+            logger.info('supercharged-processor', 'Multi-confidence produced better results');
+          }
+        }
+        
+        // Strategy 4: Enhanced OCR for images
+        if (this.isImageFile(filePath) && this.shouldTryEnhancedOCR(bestResult)) {
+          logger.debug('supercharged-processor', 'Trying enhanced OCR for image');
+          const ocrResult = await this.processWithEnhancedOCR(filePath);
+          
+          if (this.isBetterResult(ocrResult, bestResult)) {
+            bestResult = ocrResult;
+            logger.info('supercharged-processor', 'Enhanced OCR produced better results');
+          }
+        }
+      } else {
+        logger.info('supercharged-processor', 'Skipping AI processing for price book file');
       }
 
     } catch (error) {

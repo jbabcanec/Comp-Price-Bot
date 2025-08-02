@@ -295,4 +295,51 @@ export class HistoryRepository {
 
     return [headers, ...csvRows].map(row => row.join(',')).join('\n');
   }
+
+  /**
+   * Purge all history records from the database
+   */
+  async purgeAll(): Promise<number> {
+    const sql = 'DELETE FROM processing_history';
+    const result = await this.db.run(sql, []);
+    return result.changes;
+  }
+
+  /**
+   * Delete history records by company
+   */
+  async deleteByCompany(company: string): Promise<number> {
+    const sql = 'DELETE FROM processing_history WHERE company_name = ?';
+    const result = await this.db.run(sql, [company]);
+    return result.changes;
+  }
+
+  /**
+   * Delete history records by multiple companies
+   */
+  async deleteByCompanies(companies: string[]): Promise<number> {
+    if (companies.length === 0) return 0;
+    
+    const placeholders = companies.map(() => '?').join(',');
+    const sql = `DELETE FROM processing_history WHERE company_name IN (${placeholders})`;
+    const result = await this.db.run(sql, companies);
+    return result.changes;
+  }
+
+  /**
+   * Get all unique companies from history
+   */
+  async getCompanies(): Promise<string[]> {
+    const sql = 'SELECT DISTINCT company_name FROM processing_history WHERE company_name IS NOT NULL ORDER BY company_name';
+    const results = await this.db.all<{ company_name: string }>(sql, []);
+    return results.map(r => r.company_name);
+  }
+
+  /**
+   * Get history count by company
+   */
+  async getCountsByCompany(): Promise<{ company: string; count: number }[]> {
+    const sql = 'SELECT company_name as company, COUNT(*) as count FROM processing_history WHERE company_name IS NOT NULL GROUP BY company_name ORDER BY company_name';
+    return this.db.all<{ company: string; count: number }>(sql, []);
+  }
 }

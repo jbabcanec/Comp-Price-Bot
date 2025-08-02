@@ -19,7 +19,13 @@
     "lint": "eslint src tests --ext .ts,.tsx",
     "typecheck": "tsc --noEmit",
     "demo:openai": "ts-node examples/openai-demo.ts",
-    "package": "npm run build && electron-builder --win"
+    "package": "npm run build && electron-builder --win",
+    "package:all": "npm run build && electron-builder --mac --win --linux",
+    "package:mac": "npm run build && electron-builder --mac",
+    "package:win": "npm run build && electron-builder --win",
+    "package:linux": "npm run build && electron-builder --linux",
+    "postinstall": "electron-builder install-app-deps",
+    "rebuild": "electron-rebuild"
   },
   "keywords": [
     "hvac",
@@ -130,6 +136,12 @@
           "arch": [
             "x64"
           ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "x64"
+          ]
         }
       ],
       "verifyUpdateCodeSignature": false
@@ -147,6 +159,13 @@
       "target": [
         {
           "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        },
+        {
+          "target": "zip",
           "arch": [
             "x64",
             "arm64"

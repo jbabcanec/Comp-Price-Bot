@@ -252,7 +252,7 @@ export class ProductsRepository {
   }
 
   /**
-   * Bulk insert products
+   * Bulk insert products with optimized batch processing
    */
   async bulkCreate(products: ProductCreateInput[]): Promise<number> {
     if (products.length === 0) return 0;
@@ -261,15 +261,57 @@ export class ProductsRepository {
     
     try {
       let insertedCount = 0;
+      const batchSize = 50; // Process in batches to avoid memory issues
       
-      for (const product of products) {
+      // Prepare batch insert SQL
+      const placeholders = '(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+      
+      for (let i = 0; i < products.length; i += batchSize) {
+        const batch = products.slice(i, i + batchSize);
+        
+        // Build multi-row insert SQL
+        const valuesClauses = batch.map(() => placeholders).join(', ');
+        const sql = `
+          INSERT OR IGNORE INTO products (
+            sku, model, brand, type, tonnage, seer, seer2, 
+            afue, hspf, refrigerant, stage
+          ) VALUES ${valuesClauses}
+        `;
+        
+        // Flatten parameters for batch insert
+        const params: any[] = [];
+        for (const product of batch) {
+          params.push(
+            product.sku,
+            product.model,
+            product.brand,
+            product.type,
+            product.tonnage,
+            product.seer,
+            product.seer2,
+            product.afue,
+            product.hspf,
+            product.refrigerant,
+            product.stage
+          );
+        }
+        
         try {
-          await this.create(product);
-          insertedCount++;
+          const result = await this.db.run(sql, params);
+          insertedCount += result.changes;
         } catch (error) {
-          // Skip duplicates, log other errors
-          if (error instanceof Error && !error.message.includes('UNIQUE constraint failed')) {
-            console.error('Bulk insert error for product:', product.sku, error);
+          // Log error but continue with other batches
+          console.error('Bulk insert batch error:', error);
+          // Fall back to individual inserts for this batch
+          for (const product of batch) {
+            try {
+              await this.create(product);
+              insertedCount++;
+            } catch (err) {
+              if (err instanceof Error && !err.message.includes('UNIQUE constraint failed')) {
+                console.error('Individual insert error for product:', product.sku, err);
+              }
+            }
           }
         }
       }
@@ -302,5 +344,52 @@ export class ProductsRepository {
     sql += ' ORDER BY brand, model';
     
     return this.db.all<Product>(sql, params);
+  }
+
+  /**
+   * Purge all products from the database - optimized for instant deletion
+   */
+  async purgeAll(): Promise<number> {
+    const sql = 'DELETE FROM products';
+    const result = await this.db.run(sql, []);
+    return result.changes;
+  }
+
+  /**
+   * Delete products by brand
+   */
+  async deleteByBrand(brand: string): Promise<number> {
+    const sql = 'DELETE FROM products WHERE brand = ?';
+    const result = await this.db.run(sql, [brand]);
+    return result.changes;
+  }
+
+  /**
+   * Delete products by multiple brands
+   */
+  async deleteByBrands(brands: string[]): Promise<number> {
+    if (brands.length === 0) return 0;
+    
+    const placeholders = brands.map(() => '?').join(',');
+    const sql = `DELETE FROM products WHERE brand IN (${placeholders})`;
+    const result = await this.db.run(sql, brands);
+    return result.changes;
+  }
+
+  /**
+   * Get all unique brands in the database
+   */
+  async getBrands(): Promise<string[]> {
+    const sql = 'SELECT DISTINCT brand FROM products ORDER BY brand';
+    const results = await this.db.all<{ brand: string }>(sql, []);
+    return results.map(r => r.brand);
+  }
+
+  /**
+   * Get product count by brand
+   */
+  async getCountsByBrand(): Promise<{ brand: string; count: number }[]> {
+    const sql = 'SELECT brand, COUNT(*) as count FROM products GROUP BY brand ORDER BY brand';
+    return this.db.all<{ brand: string; count: number }>(sql, []);
   }
 }

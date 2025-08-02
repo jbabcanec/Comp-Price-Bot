@@ -30,6 +30,7 @@ export interface ElectronAPI {
       update: (product: any) => Promise<IpcResponse<any>>;
       delete: (id: number) => Promise<IpcResponse<boolean>>;
       bulkCreate: (products: any[]) => Promise<IpcResponse<number>>;
+      purgeAll: () => Promise<IpcResponse<{ deleted: number }>>;
     };
     mappings: {
       create: (mapping: any) => Promise<IpcResponse<any>>;
@@ -98,6 +99,9 @@ export interface ElectronAPI {
     getHistory: () => Promise<IpcResponse<any[]>>;
     getMatches: () => Promise<IpcResponse<any[]>>;
   };
+
+  // General invoke method for direct IPC calls
+  invoke: (channel: string, ...args: any[]) => Promise<any>;
 }
 
 // Create the API object
@@ -129,6 +133,7 @@ const electronAPI: ElectronAPI = {
       update: (product: any) => ipcRenderer.invoke('db:products:update', product),
       delete: (id: number) => ipcRenderer.invoke('db:products:delete', id),
       bulkCreate: (products: any[]) => ipcRenderer.invoke('db:products:bulkCreate', products),
+      purgeAll: () => ipcRenderer.invoke('db:purgeProducts'),
     },
     mappings: {
       create: (mapping: any) => ipcRenderer.invoke('db:mappings:create', mapping),
@@ -197,6 +202,9 @@ const electronAPI: ElectronAPI = {
     getHistory: () => ipcRenderer.invoke('crosswalk:get-history'),
     getMatches: () => ipcRenderer.invoke('crosswalk:get-matches'),
   },
+
+  // General invoke method for direct IPC calls
+  invoke: (channel: string, ...args: any[]) => ipcRenderer.invoke(channel, ...args),
 };
 
 // Expose the API to the renderer process

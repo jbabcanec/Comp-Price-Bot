@@ -40,6 +40,19 @@ export const IPC_CHANNELS = {
   DB_COMPETITOR_DATA_GET_COMPANIES: 'db:competitorData:getCompanies',
   DB_COMPETITOR_DATA_DELETE: 'db:competitorData:delete',
   
+  // Database operations - Bulk operations
+  DB_PURGE_ALL_DATA: 'db:purgeAllData',
+  DB_PURGE_PRODUCTS: 'db:purgeProducts',
+  DB_PURGE_MAPPINGS: 'db:purgeMappings',
+  DB_PURGE_COMPETITOR_DATA: 'db:purgeCompetitorData',
+  DB_PURGE_HISTORY: 'db:purgeHistory',
+  
+  // Database operations - Selective unloading
+  DB_UNLOAD_PRICE_BOOK: 'db:unloadPriceBook',
+  DB_GET_PRICE_BOOK_SUMMARY: 'db:getPriceBookSummary',
+  DB_DELETE_BY_COMPANY: 'db:deleteByCompany',
+  DB_DELETE_BY_BRAND: 'db:deleteByBrand',
+  
   // Settings operations
   SETTINGS_GET: 'settings:get',
   SETTINGS_SET: 'settings:set',

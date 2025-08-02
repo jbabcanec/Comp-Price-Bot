@@ -206,4 +206,42 @@ export class CompetitorDataRepository {
     const result = await this.findById(id);
     return result || null;
   }
+
+  /**
+   * Purge all competitor data from the database
+   */
+  async purgeAll(): Promise<number> {
+    const sql = 'DELETE FROM competitor_data';
+    const result = await this.db.run(sql, []);
+    return result.changes;
+  }
+
+  /**
+   * Delete competitor data by company
+   */
+  async deleteByCompany(company: string): Promise<number> {
+    const sql = 'DELETE FROM competitor_data WHERE company = ?';
+    const result = await this.db.run(sql, [company]);
+    return result.changes;
+  }
+
+  /**
+   * Delete competitor data by multiple companies
+   */
+  async deleteByCompanies(companies: string[]): Promise<number> {
+    if (companies.length === 0) return 0;
+    
+    const placeholders = companies.map(() => '?').join(',');
+    const sql = `DELETE FROM competitor_data WHERE company IN (${placeholders})`;
+    const result = await this.db.run(sql, companies);
+    return result.changes;
+  }
+
+  /**
+   * Get count by company
+   */
+  async getCountsByCompany(): Promise<{ company: string; count: number }[]> {
+    const sql = 'SELECT company, COUNT(*) as count FROM competitor_data GROUP BY company ORDER BY company';
+    return this.db.all<{ company: string; count: number }>(sql, []);
+  }
 }

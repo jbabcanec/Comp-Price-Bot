@@ -235,30 +235,86 @@ export function registerFileHandlers(): void {
 
   // Batch file processing for selected files from directory
   ipcMain.handle(IPC_CHANNELS.FILE_PROCESS_BATCH, async (_, filePaths: string[]) => {
+    logger.info('file-ops', 'Starting batch file processing', { 
+      fileCount: filePaths.length,
+      files: filePaths.map(p => p.split('/').pop()).join(', ')
+    });
+    
+    const startTime = Date.now();
+    
     try {
-      const results = [];
+      // Process files in parallel for better performance
+      const processor = await getSuperchargedProcessor();
       
-      for (const filePath of filePaths) {
+      const promises = filePaths.map(async (filePath) => {
+        const fileStartTime = Date.now();
         try {
-          const processor = await getSuperchargedProcessor();
-      const result = await processor.processFileWithFallbacks(filePath);
-          results.push(result);
+          logger.debug('file-ops', 'Processing file in batch', { filePath });
+          const result = await processor.processFileWithFallbacks(filePath);
+          const fileProcessTime = Date.now() - fileStartTime;
+          
+          logger.info('file-ops', 'Batch file processed', {
+            filePath,
+            success: result.success,
+            itemsFound: result.data.length,
+            processingTime: fileProcessTime
+          });
+          
+          return result;
         } catch (error) {
-          console.error(`Error processing ${filePath}:`, error);
-          results.push({
+          const fileProcessTime = Date.now() - fileStartTime;
+          logger.error('file-ops', `Error processing file in batch: ${filePath}`, 
+            error instanceof Error ? error : new Error(String(error)));
+          
+          return {
             success: false,
             fileName: filePath.split('/').pop() || 'unknown',
             fileType: 'unknown',
-            processingTime: 0,
+            processingTime: fileProcessTime,
             data: [],
             error: error instanceof Error ? error.message : 'Unknown error'
-          });
+          };
         }
+      });
+
+      // Process up to 3 files concurrently to avoid overwhelming the system
+      const batchSize = 3;
+      const results = [];
+      
+      for (let i = 0; i < promises.length; i += batchSize) {
+        const batch = promises.slice(i, i + batchSize);
+        const batchResults = await Promise.all(batch);
+        results.push(...batchResults);
+        
+        // Log progress
+        const processed = Math.min(i + batchSize, promises.length);
+        logger.info('file-ops', 'Batch processing progress', {
+          processed,
+          total: promises.length,
+          percentage: Math.round((processed / promises.length) * 100)
+        });
       }
+      
+      const totalTime = Date.now() - startTime;
+      const successCount = results.filter(r => r.success).length;
+      const totalItems = results.reduce((sum, r) => sum + r.data.length, 0);
+      
+      logger.info('file-ops', 'Batch processing complete', {
+        totalFiles: filePaths.length,
+        successfulFiles: successCount,
+        failedFiles: filePaths.length - successCount,
+        totalItemsExtracted: totalItems,
+        totalProcessingTime: totalTime,
+        avgTimePerFile: Math.round(totalTime / filePaths.length)
+      });
 
       return { success: true, data: results };
     } catch (error) {
-      console.error('IPC Error - Batch Process:', error);
+      const totalTime = Date.now() - startTime;
+      logger.error('file-ops', 'Batch processing failed', 
+        error instanceof Error ? error : new Error(String(error)),
+        { totalTime });
+      
       return {
         success: false,
         error: {

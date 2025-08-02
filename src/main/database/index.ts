@@ -100,6 +100,27 @@ export class DatabaseService {
       return false;
     }
   }
+
+  /**
+   * Begin a database transaction
+   */
+  async beginTransaction(): Promise<void> {
+    await this.db.beginTransaction();
+  }
+
+  /**
+   * Commit a database transaction
+   */
+  async commit(): Promise<void> {
+    await this.db.commit();
+  }
+
+  /**
+   * Rollback a database transaction
+   */
+  async rollback(): Promise<void> {
+    await this.db.rollback();
+  }
 }
 
 // Singleton instance

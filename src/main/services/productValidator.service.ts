@@ -70,6 +70,125 @@ export interface ImportSummary {
 export class ProductValidatorService {
 
   /**
+   * Simplified validation for structured price book data (CSV/Excel)
+   * Since this is our own price book, we trust the data structure
+   */
+  validateStructuredProduct(data: ExtractedData, rowNumber?: number): ValidationResult {
+    const errors: string[] = [];
+    const warnings: string[] = [];
+    
+    // Minimal validation - just need SKU
+    if (!data.sku || data.sku.trim().length === 0) {
+      errors.push('SKU is required');
+    }
+    
+    // Extract basic product info from structured data
+    const cleanedProduct: UniversalProduct = {
+      sku: (data.sku || '').trim(),
+      model: (data.model || data.sku || '').trim(),
+      brand: (data.company || 'Unknown').trim(),
+      
+      // For structured data, use type directly or infer from description
+      primaryType: this.mapToDbType(data.type || this.inferTypeFromDescription(data.description || '')),
+      subTypes: [],
+      
+      // Direct mapping of specifications
+      specifications: this.extractStructuredSpecs(data),
+      
+      description: data.description,
+      msrp: data.price ? Math.round(data.price * 100) / 100 : undefined,
+      
+      // High confidence for structured data
+      confidence: 0.95,
+      source: 'structured_import',
+      detectedPatterns: ['price_book_import']
+    };
+    
+    // Only fail if we have critical errors
+    return {
+      isValid: errors.length === 0,
+      errors,
+      warnings,
+      cleanedProduct: errors.length === 0 ? cleanedProduct : undefined
+    };
+  }
+
+  /**
+   * Extract specifications from structured data
+   */
+  private extractStructuredSpecs(data: ExtractedData): Record<string, any> {
+    const specs: Record<string, any> = {};
+    
+    // Map common HVAC specifications if present in the data
+    const specMappings = {
+      'tonnage': ['tonnage', 'tons', 'ton', 'capacity'],
+      'seer': ['seer', 'seer rating', 'efficiency'],
+      'seer2': ['seer2', 'seer 2'],
+      'hspf': ['hspf', 'heating efficiency'],
+      'afue': ['afue', 'afue%', 'furnace efficiency'],
+      'btuh': ['btuh', 'btu/h', 'btu', 'capacity'],
+      'cfm': ['cfm', 'airflow'],
+      'stages': ['stages', 'stage', 'speed'],
+      'refrigerant': ['refrigerant', 'ref type'],
+      'voltage': ['voltage', 'volts', 'v'],
+      'phase': ['phase', 'ph'],
+      'weight': ['weight', 'lbs', 'pounds']
+    };
+    
+    // Check each field in the data for specification values
+    for (const [specKey, aliases] of Object.entries(specMappings)) {
+      for (const [dataKey, dataValue] of Object.entries(data)) {
+        if (dataValue && aliases.some(alias => dataKey.toLowerCase().includes(alias))) {
+          specs[specKey] = this.normalizeSpecValue(dataValue);
+          break;
+        }
+      }
+    }
+    
+    // Also preserve any additional fields that might be specifications
+    for (const [key, value] of Object.entries(data)) {
+      if (value && 
+          !['sku', 'model', 'company', 'description', 'price', 'type'].includes(key.toLowerCase()) &&
+          !specs[key]) {
+        specs[key] = value;
+      }
+    }
+    
+    return specs;
+  }
+
+  /**
+   * Normalize specification values
+   */
+  private normalizeSpecValue(value: any): any {
+    if (typeof value === 'string') {
+      // Try to extract numeric values
+      const numMatch = value.match(/[\d.]+/);
+      if (numMatch) {
+        const num = parseFloat(numMatch[0]);
+        if (!isNaN(num)) return num;
+      }
+    }
+    return value;
+  }
+
+  /**
+   * Infer product type from description for structured data
+   */
+  private inferTypeFromDescription(description: string): string {
+    const desc = description.toLowerCase();
+    
+    if (desc.includes('furnace')) return 'furnace';
+    if (desc.includes('heat pump')) return 'heat-pump';
+    if (desc.includes('air condition') || desc.includes('ac unit')) return 'air-conditioner';
+    if (desc.includes('air handler') || desc.includes('ahu')) return 'ahu';
+    if (desc.includes('coil')) return 'coil';
+    if (desc.includes('thermostat')) return 'control';
+    
+    return 'hvac-equipment';
+  }
+
+  /**
    * Universal product validation - completely dynamic
    */
   validateProduct(data: ExtractedData, rowNumber?: number): ValidationResult {
@@ -161,31 +280,63 @@ export class ProductValidatorService {
     
     for (let i = 0; i < extractedData.length; i++) {
       const data = extractedData[i];
-      const result = this.validateProduct(data, i + 1);
       
-      if (result.isValid && result.cleanedProduct) {
-        // Check for duplicate SKUs
-        if (seenSkus.has(result.cleanedProduct.sku)) {
-          summary.duplicateSkus++;
+      // For structured data (has company field = our price book), use simplified validation
+      if (data.company || data.sku) {
+        const result = this.validateStructuredProduct(data, i + 1);
+        
+        if (result.isValid && result.cleanedProduct) {
+          // Check for duplicate SKUs
+          if (seenSkus.has(result.cleanedProduct.sku)) {
+            summary.duplicateSkus++;
+            summary.errors.push({
+              row: i + 1,
+              sku: result.cleanedProduct.sku,
+              errors: ['Duplicate SKU found in import']
+            });
+          } else {
+            seenSkus.add(result.cleanedProduct.sku);
+            summary.products.push(result.cleanedProduct);
+            summary.validProducts++;
+          }
+          
+          summary.warnings += result.warnings.length;
+        } else {
+          summary.invalidProducts++;
           summary.errors.push({
             row: i + 1,
-            sku: result.cleanedProduct.sku,
-            errors: ['Duplicate SKU found in import']
+            sku: data.sku || 'Unknown',
+            errors: result.errors
           });
-        } else {
-          seenSkus.add(result.cleanedProduct.sku);
-          summary.products.push(result.cleanedProduct);
-          summary.validProducts++;
         }
-        
-        summary.warnings += result.warnings.length;
       } else {
-        summary.invalidProducts++;
-        summary.errors.push({
-          row: i + 1,
-          sku: data.sku || 'Unknown',
-          errors: result.errors
-        });
+        // For unstructured data (competitor files), use full AI validation
+        const result = this.validateProduct(data, i + 1);
+        
+        if (result.isValid && result.cleanedProduct) {
+          // Check for duplicate SKUs
+          if (seenSkus.has(result.cleanedProduct.sku)) {
+            summary.duplicateSkus++;
+            summary.errors.push({
+              row: i + 1,
+              sku: result.cleanedProduct.sku,
+              errors: ['Duplicate SKU found in import']
+            });
+          } else {
+            seenSkus.add(result.cleanedProduct.sku);
+            summary.products.push(result.cleanedProduct);
+            summary.validProducts++;
+          }
+          
+          summary.warnings += result.warnings.length;
+        } else {
+          summary.invalidProducts++;
+          summary.errors.push({
+            row: i + 1,
+            sku: data.sku || 'Unknown',
+            errors: result.errors
+          });
+        }
       }
     }
     
@@ -394,8 +545,16 @@ export class ProductValidatorService {
       'other': 'AC'
     };
     
+    // Check if we have a mapping
     const normalized = primaryType.toLowerCase().trim();
-    return typeMapping[normalized] || 'AC'; // Default to AC if not found
+    const mapped = typeMapping[normalized];
+    if (mapped) return mapped;
+    
+    // Otherwise return the original type with proper capitalization
+    // This allows for any equipment type in the price book
+    return primaryType.split(/[-_\s]+/).map(word => 
+      word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+    ).join(' ') || 'HVAC Equipment';
   }
 
   /**

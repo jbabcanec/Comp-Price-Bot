@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import './Products.css';
 
+/**
+ * Represents a file in the selected directory for price book import
+ */
 interface ProductFile {
   name: string;
   path: string;
@@ -10,12 +13,15 @@ interface ProductFile {
   size?: number;
 }
 
+/**
+ * Represents an imported HVAC product with complete specifications
+ */
 interface ImportedProduct {
   id?: number;
   sku: string;
   model: string;
   brand: string;
-  type: 'AC' | 'Heat Pump' | 'Furnace' | 'Air Handler';
+  type: string; // Allow any product type for flexibility
   tonnage?: number;
   seer?: number;
   seer2?: number;
@@ -48,6 +54,17 @@ interface ImportSummary {
 
 type ViewMode = 'import' | 'table';
 
+/**
+ * Products page component for managing the company's HVAC price book.
+ * Provides functionality to import, view, manage, and unload price book data.
+ * 
+ * Features:
+ * - Import price book from various file formats (CSV, Excel, JSON, TXT)
+ * - View and search through imported products
+ * - Individual product management (view details, delete)
+ * - Complete price book unloading with confirmation
+ * - Persistent view mode and directory selection
+ */
 export const Products: React.FC = () => {
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     // Restore view mode from localStorage, default to import if no products exist
@@ -61,6 +78,7 @@ export const Products: React.FC = () => {
   const [productFiles, setProductFiles] = useState<ProductFile[]>([]);
   const [loading, setLoading] = useState(false);
   const [processing, setProcessing] = useState(false);
+  const [processingProgress, setProcessingProgress] = useState<string>('');
   const [importedProducts, setImportedProducts] = useState<ImportedProduct[]>([]);
   const [importSummary, setImportSummary] = useState<ImportSummary | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -99,6 +117,13 @@ export const Products: React.FC = () => {
     setLoading(true);
     try {
       const electronAPI = (window as any).electronAPI;
+      console.log('loadDirectoryFiles - electronAPI:', electronAPI);
+      console.log('loadDirectoryFiles - electronAPI.file:', electronAPI?.file);
+      
+      if (!electronAPI?.file?.scanDirectory) {
+        throw new Error('File API not available');
+      }
+      
       const result = await electronAPI.file.scanDirectory(directoryPath);
 
       if (!result.success) {
@@ -153,6 +178,10 @@ export const Products: React.FC = () => {
     }
   }, []);
 
+  /**
+   * Loads existing products from the database and updates the local state.
+   * Called on component mount and after product operations.
+   */
   const loadExistingProducts = async () => {
     try {
       const electronAPI = (window as any).electronAPI;
@@ -166,6 +195,11 @@ export const Products: React.FC = () => {
     }
   };
 
+  /**
+   * Processes selected files and imports products into the database.
+   * Validates products using HVAC-specific rules and provides detailed feedback.
+   * @returns {Promise<void>}
+   */
   const handleLoadSelected = async () => {
     const selectedFiles = productFiles.filter(f => f.selected);
     if (selectedFiles.length === 0) {
@@ -174,10 +208,13 @@ export const Products: React.FC = () => {
     }
 
     setProcessing(true);
+    setProcessingProgress('Starting file processing...');
+    
     try {
       const electronAPI = (window as any).electronAPI;
       const filePaths = selectedFiles.map(f => f.path);
       
+      setProcessingProgress(`Processing ${filePaths.length} files...`);
       const result = await electronAPI.file.processBatch(filePaths);
       
       if (!result.success) {
@@ -186,6 +223,9 @@ export const Products: React.FC = () => {
 
       // Process results with validation
       const processedData = result.data;
+      const successfulFiles = processedData.filter((r: any) => r.success).length;
+      setProcessingProgress(`Extracted data from ${successfulFiles} files, validating products...`);
+      
       const extractedProducts = processedData.flatMap((fileResult: any) => 
         fileResult.success ? fileResult.data : []
       );
@@ -202,9 +242,11 @@ export const Products: React.FC = () => {
 
       // If we have valid products, store them in database
       if (summary.validProducts > 0) {
+        setProcessingProgress(`Saving ${summary.validProducts} products to database...`);
         const dbResult = await electronAPI.database.products.bulkCreate(summary.products);
         
         if (dbResult.success) {
+          setProcessingProgress('Refreshing product list...');
           // Refresh the product list
           await loadExistingProducts();
           setViewMode('table');
@@ -220,6 +262,7 @@ export const Products: React.FC = () => {
       alert('Import failed: ' + (error instanceof Error ? error.message : 'Unknown error'));
     } finally {
       setProcessing(false);
+      setProcessingProgress('');
     }
   };
 
@@ -291,6 +334,49 @@ export const Products: React.FC = () => {
     } catch (error) {
       console.error('Delete failed:', error);
       alert('Delete failed: ' + (error instanceof Error ? error.message : 'Unknown error'));
+    }
+  };
+
+  /**
+   * Handles the complete unloading (deletion) of all products from the price book.
+   * Requires triple confirmation from the user to prevent accidental data loss.
+   * After successful unloading, switches the UI back to import mode.
+   */
+  const handleUnloadPriceBook = async () => {
+    if (importedProducts.length === 0) {
+      alert('No price book loaded to unload.');
+      return;
+    }
+    
+    const confirmed = confirm(
+      `Delete ALL ${importedProducts.length} products from your price book?\n\nThis action cannot be undone.`
+    );
+    
+    if (!confirmed) return;
+    
+    try {
+      const electronAPI = (window as any).electronAPI;
+      console.log('Starting unload operation...');
+      
+      const response = await electronAPI.database.products.purgeAll();
+      console.log('Purge response:', response);
+      
+      if (response && response.success) {
+        const { deleted } = response.data;
+        
+        // Immediately clear the UI
+        setImportedProducts([]);
+        setViewMode('import');
+        localStorage.setItem('priceBookViewMode', 'import');
+        
+        alert(`Deleted ${deleted} products. Price book is now empty.`);
+      } else {
+        console.error('Purge failed:', response);
+        alert('Failed to unload price book: ' + (response?.error?.message || 'Unknown error'));
+      }
+    } catch (error) {
+      console.error('Error unloading price book:', error);
+      alert('Error unloading price book: ' + (error instanceof Error ? error.message : 'Unknown error'));
     }
   };
 
@@ -417,6 +503,15 @@ export const Products: React.FC = () => {
           </button>
         </div>
       )}
+      
+      {processing && processingProgress && (
+        <div className="processing-progress">
+          <div className="progress-message">
+            <div className="spinner"></div>
+            <span>{processingProgress}</span>
+          </div>
+        </div>
+      )}
 
       <div className="products-content">
         {viewMode === 'import' ? (
@@ -517,6 +612,21 @@ export const Products: React.FC = () => {
                   {filteredProducts.length} of {importedProducts.length} products
                 </span>
               </div>
+              <div className="table-actions">
+                <button 
+                  className="btn btn-danger"
+                  onClick={handleUnloadPriceBook}
+                  disabled={importedProducts.length === 0}
+                >
+                  <div className="btn-icon">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                      <path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M10 11v6M14 11v6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </div>
+                  Unload All Products
+                </button>
+              </div>
             </div>
 
             {filteredProducts.length === 0 ? (
@@ -554,7 +664,7 @@ export const Products: React.FC = () => {
                           <td>{product.brand}</td>
                           <td>{product.model}</td>
                           <td>
-                            <span className={`type-badge type-${product.type.toLowerCase().replace(' ', '-')}`}>
+                            <span className={`type-badge type-${product.type.toLowerCase().replace(/\s+/g, '-')}`}>
                               {product.type}
                             </span>
                           </td>
@@ -638,6 +748,7 @@ export const Products: React.FC = () => {
           </div>
         )}
       </div>
+
     </div>
   );
 };

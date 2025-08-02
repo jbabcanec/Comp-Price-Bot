@@ -297,4 +297,60 @@ export class MappingsRepository {
     const result = await this.db.get<{ count: number }>(sql, params);
     return result?.count || 0;
   }
+
+  /**
+   * Purge all mappings from the database
+   */
+  async purgeAll(): Promise<number> {
+    const sql = 'DELETE FROM mappings';
+    const result = await this.db.run(sql, []);
+    return result.changes;
+  }
+
+  /**
+   * Delete mappings by competitor company
+   */
+  async deleteByCompany(company: string): Promise<number> {
+    const sql = 'DELETE FROM mappings WHERE competitor_company = ?';
+    const result = await this.db.run(sql, [company]);
+    return result.changes;
+  }
+
+  /**
+   * Delete mappings by multiple companies
+   */
+  async deleteByCompanies(companies: string[]): Promise<number> {
+    if (companies.length === 0) return 0;
+    
+    const placeholders = companies.map(() => '?').join(',');
+    const sql = `DELETE FROM mappings WHERE competitor_company IN (${placeholders})`;
+    const result = await this.db.run(sql, companies);
+    return result.changes;
+  }
+
+  /**
+   * Get all unique competitor companies
+   */
+  async getCompanies(): Promise<string[]> {
+    const sql = 'SELECT DISTINCT competitor_company FROM mappings ORDER BY competitor_company';
+    const results = await this.db.all<{ competitor_company: string }>(sql, []);
+    return results.map(r => r.competitor_company);
+  }
+
+  /**
+   * Get mapping count by company
+   */
+  async getCountsByCompany(): Promise<{ company: string; count: number }[]> {
+    const sql = 'SELECT competitor_company as company, COUNT(*) as count FROM mappings GROUP BY competitor_company ORDER BY competitor_company';
+    return this.db.all<{ company: string; count: number }>(sql, []);
+  }
+
+  /**
+   * Delete mappings by our brand (Lennox products)
+   */
+  async deleteByOurBrand(brand: string): Promise<number> {
+    const sql = 'DELETE FROM mappings WHERE our_sku LIKE ?';
+    const result = await this.db.run(sql, [`${brand}%`]);
+    return result.changes;
+  }
 }
