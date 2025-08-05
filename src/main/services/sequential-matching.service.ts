@@ -57,17 +57,21 @@ export class SequentialMatchingService {
   }
 
   private async getSettings(): Promise<any> {
-    // In main process, we need to access settings differently
+    // In main process, we need to access settings from electron-store
     try {
-      const { app } = require('electron');
-      const fs = require('fs');
-      const path = require('path');
-      const settingsPath = path.join(app.getPath('userData'), 'settings.json');
+      const Store = require('electron-store');
+      const store = new Store({ name: 'hvac-crosswalk-settings' });
       
-      if (fs.existsSync(settingsPath)) {
-        const data = fs.readFileSync(settingsPath, 'utf8');
-        return JSON.parse(data);
-      }
+      // Get the OpenAI API key from the secure API key service
+      const { ApiKeyService } = require('./apiKey.service');
+      const apiKeyService = new ApiKeyService();
+      const openaiApiKey = await apiKeyService.getOpenAIKey();
+      
+      // Return settings with the API key
+      return {
+        openaiApiKey,
+        ...store.store
+      };
     } catch (error) {
       logger.error('sequential-matching', 'Failed to load settings', error as Error);
     }
@@ -341,9 +345,9 @@ export class SequentialMatchingService {
     ourProducts: OurProduct[]
   ): Promise<{ matches: MatchResult[], researchData: any }> {
     try {
-      // Note: This would need to be implemented differently for main process
-      // For now, returning empty result as web research is renderer-side
-      logger.warn('sequential-matching', 'Web research not available in main process');
+      // For now, skip web research in main process
+      // This could be implemented via IPC to renderer if needed
+      logger.debug('sequential-matching', 'Web research stage skipped in main process');
       return { matches: [], researchData: null };
     } catch (error) {
       logger.error('sequential-matching', 'Web research failed', error as Error);

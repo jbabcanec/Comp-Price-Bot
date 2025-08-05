@@ -1,0 +1,10 @@
+Competitive HVAC Pricing
+
+Product: EL16XC1-024-23A
+Brand: ACME HVAC Supply
+Model: EL16XC1-024-23A
+Type: Air Conditioner
+Price: $3,299.00
+
+Description: Direct equivalent to Lennox EL16XC1-024-230 from competitive supplier
+Note: Model number nearly identical, should trigger fuzzy matching

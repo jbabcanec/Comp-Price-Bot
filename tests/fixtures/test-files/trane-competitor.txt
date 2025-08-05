@@ -1,0 +1,11 @@
+HVAC Competitive Pricing
+
+Product: TTX036C100A0
+Brand: Trane
+Model: TTX036C100A0
+Type: Air Conditioner  
+Capacity: 3 Ton
+SEER: 13
+Price: $2,899.00
+
+Description: Trane 3-ton AC unit competing with Lennox 3-ton models

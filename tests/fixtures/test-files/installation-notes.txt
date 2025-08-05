@@ -1,0 +1,9 @@
+Installation Notes for TTX036C100A0
+
+- Requires 240V power
+- Minimum clearance: 24" on all sides
+- Refrigerant: R-410A
+- Weight: 125 lbs
+- Dimensions: 36" x 36" x 30"
+
+Please ensure proper electrical connections and refrigerant lines.

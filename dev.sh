@@ -1,20 +1,34 @@
 #!/bin/bash
 
 # HVAC Crosswalk Development Script
-# Starts the development environment with hot reload
+echo "🚀 Starting HVAC Crosswalk Development Server..."
 
-echo "🚀 Starting HVAC Crosswalk Development Environment..."
-echo "   - React dev server with hot reload"
-echo "   - Electron main process in watch mode"
-echo "   - DevTools enabled"
-echo ""
+# Check if Node.js is installed
+if ! command -v node &> /dev/null; then
+    echo "❌ Node.js not found. Please install Node.js first."
+    exit 1
+fi
 
-# Check if node_modules exists
+# Check if npm is installed
+if ! command -v npm &> /dev/null; then
+    echo "❌ npm not found. Please install npm first."
+    exit 1
+fi
+
+# Install dependencies if node_modules doesn't exist
 if [ ! -d "node_modules" ]; then
-    echo "📦 Installing dependencies first..."
+    echo "📦 Installing dependencies..."
     npm install
 fi
 
-# Start development mode
-echo "🔧 Starting development servers..."
+# Start development server
+echo "🔥 Starting in development mode..."
+echo "🎯 AI-First Architecture Ready!"
+echo "📝 Features:"
+echo "   • OpenAI-powered extraction"
+echo "   • Universal file support"
+echo "   • Systematic crosswalk matching"
+echo "   • Clean JSON workflow"
+echo ""
+
 npm run dev

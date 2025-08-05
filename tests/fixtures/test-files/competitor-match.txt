@@ -1,0 +1,11 @@
+Competitor Pricing Quote
+
+Product: 25HCB424A003
+Brand: Carrier
+Model: 25HCB424A003
+Type: Heat Pump
+Capacity: 2 Ton
+SEER: 14
+Price: $3,199.00
+
+Description: Carrier 2-ton 14 SEER heat pump - equivalent to Lennox ML14XC1-024-230

@@ -350,39 +350,66 @@ export function registerDatabaseHandlers(): void {
 
   // Purge handlers
   ipcMain.handle(IPC_CHANNELS.DB_PURGE_ALL_DATA, async () => {
+    logger.info('database', 'Starting complete database purge operation');
+    const startTime = Date.now();
+    
     try {
-      await dbService.beginTransaction();
+      // Skip transaction for instant deletion - use direct commands
       let totalDeleted = 0;
       
-      try {
-        // Purge in the correct order to avoid foreign key constraints
-        const historyDeleted = await dbService.history.purgeAll();
-        const mappingsDeleted = await dbService.mappings.purgeAll();
-        const competitorDataDeleted = await dbService.competitorData.purgeAll();
-        const productsDeleted = await dbService.products.purgeAll();
-        
-        totalDeleted = historyDeleted + mappingsDeleted + competitorDataDeleted + productsDeleted;
-        
-        await dbService.commit();
-        
-        return { 
-          success: true, 
-          data: { 
-            totalDeleted,
-            breakdown: {
-              history: historyDeleted,
-              mappings: mappingsDeleted,
-              competitorData: competitorDataDeleted,
-              products: productsDeleted
-            }
-          } 
-        };
-      } catch (error) {
-        await dbService.rollback();
-        throw error;
-      }
+      logger.debug('database', 'Purging data tables in correct order');
+      
+      // Purge in the correct order to avoid foreign key constraints
+      const historyDeleted = await dbService.history.purgeAll();
+      logger.debug('database', 'History purged', { deleted: historyDeleted });
+      
+      const mappingsDeleted = await dbService.mappings.purgeAll();
+      logger.debug('database', 'Mappings purged', { deleted: mappingsDeleted });
+      
+      const competitorDataDeleted = await dbService.competitorData.purgeAll();
+      logger.debug('database', 'Competitor data purged', { deleted: competitorDataDeleted });
+      
+      const productsDeleted = await dbService.products.purgeAll();
+      logger.debug('database', 'Products purged', { deleted: productsDeleted });
+      
+      totalDeleted = historyDeleted + mappingsDeleted + competitorDataDeleted + productsDeleted;
+      
+      // Force database synchronization for instant deletion
+      const rawDb = dbService.getRawConnection();
+      await rawDb.run('PRAGMA synchronous = FULL');
+      await rawDb.run('VACUUM');
+      
+      const duration = Date.now() - startTime;
+      logger.info('database', 'Complete database purge completed', {
+        totalDeleted,
+        breakdown: {
+          history: historyDeleted,
+          mappings: mappingsDeleted,
+          competitorData: competitorDataDeleted,
+          products: productsDeleted
+        },
+        durationMs: duration
+      });
+      
+      return { 
+        success: true, 
+        data: { 
+          totalDeleted,
+          breakdown: {
+            history: historyDeleted,
+            mappings: mappingsDeleted,
+            competitorData: competitorDataDeleted,
+            products: productsDeleted
+          }
+        } 
+      };
     } catch (error) {
-      console.error('IPC Error - Purge All Data:', error);
+      const duration = Date.now() - startTime;
+      logger.error('database', 'Complete database purge failed', 
+        error instanceof Error ? error : new Error(String(error)),
+        { durationMs: duration }
+      );
+      
       return { 
         success: false, 
         error: { 

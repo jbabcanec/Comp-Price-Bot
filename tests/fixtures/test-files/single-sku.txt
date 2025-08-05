@@ -1,0 +1,11 @@
+HVAC Equipment Quote
+
+Product: TTX036C100A0
+Brand: Trane  
+Model: TTX036
+Type: Air Conditioner
+Capacity: 3 Ton
+Efficiency: 13 SEER
+Price: $2,899.00
+
+Description: High-quality residential air conditioning unit suitable for homes up to 1800 sq ft.

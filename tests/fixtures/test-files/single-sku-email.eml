@@ -1,0 +1,51 @@
+From: supplier@traneparts.com
+To: purchasing@yourcompany.com
+Subject: Price Update - Single Item
+Date: Sun, 04 Aug 2025 10:30:00 -0500
+Message-ID: <20250804103000.12345@traneparts.com>
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="----=_NextPart_000_0123_456789AB.CDEF0123"
+
+This is a multi-part message in MIME format.
+
+------=_NextPart_000_0123_456789AB.CDEF0123
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+
+Hello,
+
+Quick price update for you:
+
+Product: TTX036C100A0
+Description: Trane 3 Ton 13 SEER Air Conditioner
+Price: $2,899.00
+Availability: In Stock
+
+This is our premium 3-ton unit with excellent efficiency ratings.
+
+Please see attached specification sheet for technical details.
+
+Best regards,
+Trane Parts Supply Team
+
+------=_NextPart_000_0123_456789AB.CDEF0123
+Content-Type: text/csv; name="product-specs.csv"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="product-specs.csv"
+
+U0tVLE1vZGVsLEJyYW5kLFR5cGUsVG9ubmFnZSxTRUVSLFByaWNlLERlc2NyaXB0aW9uCgpUVFgw
+MzZDMTAwQTAsVFRYMDM2LFRyYW5lLEFDLDMsMTMsMjg5OSwzIFRvbiAxMyBTRUVSIEFpciBDb25k
+aXRpb25lcg==
+
+------=_NextPart_000_0123_456789AB.CDEF0123
+Content-Type: text/plain; name="installation-notes.txt"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="installation-notes.txt"
+
+SW5zdGFsbGF0aW9uIE5vdGVzIGZvciBUVFgwMzZDMTAwQTAKCi0gUmVxdWlyZXMgMjQwViBwb3dl
+cgotIE1pbmltdW0gY2xlYXJhbmNlOiAyNCIgb24gYWxsIHNpZGVzCi0gUmVmcmlnZXJhbnQ6IFIt
+NDEwQQotIFdlaWdodDogMTI1IGxicwotIERpbWVuc2lvbnM6IDM2IiB4IDM2IiB4IDMwIgoKUGxl
+YXNlIGVuc3VyZSBwcm9wZXIgZWxlY3RyaWNhbCBjb25uZWN0aW9ucyBhbmQgcmVmcmlnZXJhbnQg
+bGluZXMu
+
+------=_NextPart_000_0123_456789AB.CDEF0123--

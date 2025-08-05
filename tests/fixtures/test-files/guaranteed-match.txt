@@ -1,0 +1,10 @@
+HVAC Equipment Quote
+
+Product: ML14XC1-024-230
+Brand: Lennox  
+Model: ML14XC1-024-230
+Type: Air Conditioner
+Capacity: 2 Ton
+Price: $3,299.00
+
+Description: Lennox 2-ton AC unit from competitor pricing.

@@ -7,6 +7,7 @@ import { registerHistoryHandlers } from './handlers/history.handler';
 import { setupLogsHandlers } from './handlers/logs.handler';
 import { registerExternalHandlers } from './handlers/external.handler';
 import { registerCrosswalkHandlers } from './handlers/crosswalk.handler';
+// REMOVED: enhanced-email.handler - deleted during cleanup
 
 /**
  * Register all IPC handlers for the application
@@ -25,6 +26,7 @@ export function registerAllIpcHandlers(): void {
   setupLogsHandlers();
   registerExternalHandlers();
   registerCrosswalkHandlers();
+  // REMOVED: registerEnhancedEmailHandlers - handler deleted during cleanup
   
   console.log('All IPC handlers registered successfully');
 }

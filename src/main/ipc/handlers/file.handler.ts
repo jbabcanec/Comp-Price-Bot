@@ -3,14 +3,16 @@ import { readFile, writeFile } from 'fs/promises';
 import { IPC_CHANNELS } from '../channels';
 import { FileSelectOptions } from '@shared/types/ipc.types';
 import { FileProcessorService } from '../../services/fileProcessor.service';
-import { SuperchargedFileProcessor } from '../../services/superchargedFileProcessor.service';
 import { ProductValidatorService } from '../../services/productValidator.service';
+import { AIExtractorService } from '../../services/extraction/ai-extractor.service';
+import { CrosswalkOrchestratorService } from '../../services/crosswalk/crosswalk-orchestrator.service';
 import { logger } from '../../services/logger.service';
 
 // Initialize with dynamic OpenAI support  
 let fileProcessor: FileProcessorService;
-let superchargedProcessor: SuperchargedFileProcessor;
 let productValidator: ProductValidatorService;
+let aiExtractor: AIExtractorService;
+let crosswalkOrchestrator: CrosswalkOrchestratorService;
 
 async function getFileProcessor(): Promise<FileProcessorService> {
   if (!fileProcessor) {
@@ -35,34 +37,57 @@ async function getFileProcessor(): Promise<FileProcessorService> {
   return fileProcessor;
 }
 
-async function getSuperchargedProcessor(): Promise<SuperchargedFileProcessor> {
-  if (!superchargedProcessor) {
-    try {
-      // Try to get OpenAI API key from secure storage
-      const { ApiKeyService } = await import('../../services/apiKey.service');
-      const apiKeyService = new ApiKeyService();
-      const openaiKey = await apiKeyService.getOpenAIKey();
-      
-      if (openaiKey) {
-        logger.info('file-ops', 'Initializing Supercharged Processor with full AI capabilities');
-        superchargedProcessor = new SuperchargedFileProcessor(openaiKey);
-      } else {
-        logger.info('file-ops', 'Initializing Supercharged Processor with traditional methods only');
-        superchargedProcessor = new SuperchargedFileProcessor();
-      }
-    } catch (error) {
-      logger.warn('file-ops', 'Failed to initialize Supercharged Processor', error);
-      superchargedProcessor = new SuperchargedFileProcessor();
-    }
-  }
-  return superchargedProcessor;
-}
+// REMOVED: getSuperchargedProcessor - service deleted during cleanup
 
 function getProductValidator(): ProductValidatorService {
   if (!productValidator) {
     productValidator = new ProductValidatorService();
   }
   return productValidator;
+}
+
+async function getAIExtractor(): Promise<AIExtractorService> {
+  if (!aiExtractor) {
+    try {
+      const { ApiKeyService } = await import('../../services/apiKey.service');
+      const apiKeyService = new ApiKeyService();
+      const openaiKey = await apiKeyService.getOpenAIKey();
+      
+      if (openaiKey) {
+        logger.info('file-ops', 'Initializing AI Extractor with OpenAI support');
+        aiExtractor = new AIExtractorService(openaiKey);
+      } else {
+        logger.info('file-ops', 'Initializing AI Extractor without OpenAI support');
+        aiExtractor = new AIExtractorService();
+      }
+    } catch (error) {
+      logger.warn('file-ops', 'Failed to initialize AI Extractor', error);
+      aiExtractor = new AIExtractorService();
+    }
+  }
+  return aiExtractor;
+}
+
+async function getCrosswalkOrchestrator(): Promise<CrosswalkOrchestratorService> {
+  if (!crosswalkOrchestrator) {
+    try {
+      const { ApiKeyService } = await import('../../services/apiKey.service');
+      const apiKeyService = new ApiKeyService();
+      const openaiKey = await apiKeyService.getOpenAIKey();
+      
+      if (openaiKey) {
+        logger.info('file-ops', 'Initializing Crosswalk Orchestrator with OpenAI support');
+        crosswalkOrchestrator = new CrosswalkOrchestratorService(openaiKey);
+      } else {
+        logger.info('file-ops', 'Initializing Crosswalk Orchestrator without OpenAI support');
+        crosswalkOrchestrator = new CrosswalkOrchestratorService();
+      }
+    } catch (error) {
+      logger.warn('file-ops', 'Failed to initialize Crosswalk Orchestrator', error);
+      crosswalkOrchestrator = new CrosswalkOrchestratorService();
+    }
+  }
+  return crosswalkOrchestrator;
 }
 
 export function registerFileHandlers(): void {
@@ -162,32 +187,50 @@ export function registerFileHandlers(): void {
     }
   });
 
-  // Real file processing using FileProcessorService
+  // AI-first file processing using CrosswalkOrchestratorService
   ipcMain.handle(IPC_CHANNELS.FILE_PROCESS, async (_, filePath: string) => {
-    logger.app('file-process', 'User initiated file processing', { filePath });
+    logger.app('file-process', 'User initiated AI-first file processing', { filePath });
     
     try {
-      const processor = await getSuperchargedProcessor();
-      const result = await processor.processFileWithFallbacks(filePath);
+      const orchestrator = await getCrosswalkOrchestrator();
+      const result = await orchestrator.processFile(filePath);
       
-      if (result.success) {
-        logger.info('app', 'File processing completed successfully', {
+      if (!result.error) {
+        logger.info('app', 'AI-first processing completed successfully', {
           filePath,
-          itemsExtracted: result.data.length,
-          processingTime: result.processingTime,
-          extractionMethod: result.extractionMethod
+          batchId: result.batchId,
+          totalProducts: result.totalProducts,
+          processedProducts: result.processedProducts,
+          summary: result.summary,
+          processingTime: result.processingTime
         });
       } else {
-        logger.warn('app', 'File processing completed with errors', {
+        logger.warn('app', 'AI-first processing completed with errors', {
           filePath,
           error: result.error
         });
       }
       
       return { 
-        success: result.success, 
-        data: result,
-        error: result.success ? undefined : { message: result.error, code: 'FILE_PROCESS_ERROR' }
+        success: !result.error, 
+        data: {
+          // Convert to legacy format for UI compatibility
+          success: !result.error,
+          data: result.results.map(r => ({
+            sku: r.competitorProduct.sku,
+            company: r.competitorProduct.brand,
+            price: r.competitorProduct.price,
+            description: r.competitorProduct.description,
+            confidence: r.bestMatch?.confidence || 0,
+            source: result.sourceFile,
+            extractionMethod: 'ai'
+          })),
+          fileName: result.sourceFile,
+          fileType: 'crosswalk',
+          processingTime: result.processingTime,
+          extractionMethod: 'ai'
+        },
+        error: result.error ? { message: result.error, code: 'FILE_PROCESS_ERROR' } : undefined
       };
     } catch (error) {
       logger.error('app', 'File processing failed unexpectedly', 
@@ -235,7 +278,7 @@ export function registerFileHandlers(): void {
 
   // Batch file processing for selected files from directory
   ipcMain.handle(IPC_CHANNELS.FILE_PROCESS_BATCH, async (_, filePaths: string[]) => {
-    logger.info('file-ops', 'Starting batch file processing', { 
+    logger.info('file-ops', 'Starting AI-first batch file processing', { 
       fileCount: filePaths.length,
       files: filePaths.map(p => p.split('/').pop()).join(', ')
     });
@@ -243,27 +286,44 @@ export function registerFileHandlers(): void {
     const startTime = Date.now();
     
     try {
-      // Process files in parallel for better performance
-      const processor = await getSuperchargedProcessor();
+      // Process files using AI-first orchestrator
+      const orchestrator = await getCrosswalkOrchestrator();
       
       const promises = filePaths.map(async (filePath) => {
         const fileStartTime = Date.now();
         try {
-          logger.debug('file-ops', 'Processing file in batch', { filePath });
-          const result = await processor.processFileWithFallbacks(filePath);
+          logger.debug('file-ops', 'Processing file in AI-first batch', { filePath });
+          const result = await orchestrator.processFile(filePath);
           const fileProcessTime = Date.now() - fileStartTime;
           
-          logger.info('file-ops', 'Batch file processed', {
+          logger.info('file-ops', 'AI-first batch file processed', {
             filePath,
-            success: result.success,
-            itemsFound: result.data.length,
+            success: !result.error,
+            productsFound: result.totalProducts,
+            matchesFound: result.summary.exactMatches + result.summary.fuzzyMatches + result.summary.specMatches + result.summary.aiMatches,
             processingTime: fileProcessTime
           });
           
-          return result;
+          // Convert to legacy format for batch compatibility
+          return {
+            success: !result.error,
+            fileName: result.sourceFile,
+            fileType: 'crosswalk',
+            processingTime: result.processingTime,
+            data: result.results.map(r => ({
+              sku: r.competitorProduct.sku,
+              company: r.competitorProduct.brand,
+              price: r.competitorProduct.price,
+              description: r.competitorProduct.description,
+              confidence: r.bestMatch?.confidence || 0,
+              source: result.sourceFile,
+              extractionMethod: 'ai'
+            })),
+            error: result.error
+          };
         } catch (error) {
           const fileProcessTime = Date.now() - fileStartTime;
-          logger.error('file-ops', `Error processing file in batch: ${filePath}`, 
+          logger.error('file-ops', `Error processing file in AI-first batch: ${filePath}`, 
             error instanceof Error ? error : new Error(String(error)));
           
           return {
@@ -338,6 +398,93 @@ export function registerFileHandlers(): void {
         error: {
           message: error instanceof Error ? error.message : 'Unknown validation error',
           code: 'PRODUCT_VALIDATION_ERROR'
+        }
+      };
+    }
+  });
+
+  // AI-first extraction handler (NEW)
+  ipcMain.handle('file:extractWithAI', async (_, filePath: string) => {
+    logger.app('ai-extraction', 'User initiated AI-first extraction', { filePath });
+    
+    try {
+      const extractor = await getAIExtractor();
+      const result = await extractor.extractFromFile({ filePath });
+      
+      if (result.success) {
+        logger.info('app', 'AI extraction completed successfully', {
+          filePath,
+          productsFound: result.products.length,
+          averageConfidence: result.metadata?.averageConfidence,
+          processingTime: result.processingTime,
+          extractionMethod: result.extractionMethod
+        });
+      } else {
+        logger.warn('app', 'AI extraction completed with errors', {
+          filePath,
+          error: result.error
+        });
+      }
+      
+      return { 
+        success: result.success, 
+        data: result,
+        error: result.success ? undefined : { message: result.error, code: 'AI_EXTRACTION_ERROR' }
+      };
+    } catch (error) {
+      logger.error('app', 'AI extraction failed unexpectedly', 
+        error instanceof Error ? error : new Error(String(error)),
+        { filePath });
+        
+      return {
+        success: false,
+        error: {
+          message: error instanceof Error ? error.message : 'Unknown AI extraction error',
+          code: 'AI_EXTRACTION_ERROR'
+        }
+      };
+    }
+  });
+
+  // AI-first crosswalk processing handler (NEW)
+  ipcMain.handle('file:processCrosswalk', async (_, filePath: string) => {
+    logger.app('crosswalk-process', 'User initiated AI-first crosswalk processing', { filePath });
+    
+    try {
+      const orchestrator = await getCrosswalkOrchestrator();
+      const result = await orchestrator.processFile(filePath);
+      
+      if (result.error) {
+        logger.warn('app', 'Crosswalk processing completed with errors', {
+          filePath,
+          error: result.error
+        });
+      } else {
+        logger.info('app', 'Crosswalk processing completed successfully', {
+          filePath,
+          batchId: result.batchId,
+          totalProducts: result.totalProducts,
+          processedProducts: result.processedProducts,
+          summary: result.summary,
+          processingTime: result.processingTime
+        });
+      }
+      
+      return { 
+        success: !result.error, 
+        data: result,
+        error: result.error ? { message: result.error, code: 'CROSSWALK_PROCESS_ERROR' } : undefined
+      };
+    } catch (error) {
+      logger.error('app', 'Crosswalk processing failed unexpectedly', 
+        error instanceof Error ? error : new Error(String(error)),
+        { filePath });
+        
+      return {
+        success: false,
+        error: {
+          message: error instanceof Error ? error.message : 'Unknown crosswalk processing error',
+          code: 'CROSSWALK_PROCESS_ERROR'
         }
       };
     }
