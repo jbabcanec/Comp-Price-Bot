@@ -214,8 +214,8 @@ export const Products: React.FC = () => {
       const electronAPI = (window as any).electronAPI;
       const filePaths = selectedFiles.map(f => f.path);
       
-      setProcessingProgress(`Processing ${filePaths.length} files...`);
-      const result = await electronAPI.file.processBatch(filePaths);
+      setProcessingProgress(`Reading ${filePaths.length} price book files...`);
+      const result = await electronAPI.file.importPriceBook(filePaths);
       
       if (!result.success) {
         throw new Error(result.error?.message || 'Batch processing failed');

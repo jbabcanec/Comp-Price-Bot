@@ -490,5 +490,93 @@ export function registerFileHandlers(): void {
     }
   });
 
+  // Simple price book import handler (NO AI, NO MATCHING - just read files)
+  ipcMain.handle('file:importPriceBook', async (_, filePaths: string[]) => {
+    logger.info('file-ops', 'Starting simple price book import (no AI/matching)', { 
+      fileCount: filePaths.length,
+      files: filePaths.map(p => p.split('/').pop()).join(', ')
+    });
+    
+    const startTime = Date.now();
+    
+    try {
+      const fileProcessor = await getFileProcessor();
+      
+      const promises = filePaths.map(async (filePath) => {
+        const fileStartTime = Date.now();
+        try {
+          logger.debug('file-ops', 'Reading price book file (simple mode)', { filePath });
+          
+          // SIMPLE file processing - just read and parse, no AI bullshit
+          const result = await fileProcessor.processFile(filePath);
+          
+          const fileProcessTime = Date.now() - fileStartTime;
+          
+          logger.info('file-ops', 'Price book file read successfully', {
+            filePath,
+            success: result.success,
+            productsFound: result.data?.length || 0,
+            processingTime: fileProcessTime
+          });
+          
+          return {
+            success: result.success,
+            fileName: filePath.split('/').pop() || 'unknown',
+            fileType: result.fileType || 'unknown',
+            processingTime: fileProcessTime,
+            data: result.data || [],
+            error: result.error
+          };
+        } catch (error) {
+          const fileProcessTime = Date.now() - fileStartTime;
+          logger.error('file-ops', `Error reading price book file: ${filePath}`, 
+            error instanceof Error ? error : new Error(String(error))
+          );
+          
+          return {
+            success: false,
+            fileName: filePath.split('/').pop() || 'unknown',
+            fileType: 'unknown',
+            processingTime: fileProcessTime,
+            data: [],
+            error: error instanceof Error ? error.message : 'Unknown error'
+          };
+        }
+      });
+      
+      // Process all files concurrently for speed
+      const results = await Promise.all(promises);
+      
+      const totalTime = Date.now() - startTime;
+      const successCount = results.filter(r => r.success).length;
+      const totalItems = results.reduce((sum, r) => sum + r.data.length, 0);
+      
+      logger.info('file-ops', 'Price book import complete', {
+        totalFiles: filePaths.length,
+        successfulFiles: successCount,
+        failedFiles: filePaths.length - successCount,
+        totalItemsExtracted: totalItems,
+        totalProcessingTime: totalTime,
+        avgTimePerFile: Math.round(totalTime / filePaths.length)
+      });
+      
+      return { success: true, data: results };
+    } catch (error) {
+      const totalTime = Date.now() - startTime;
+      logger.error('file-ops', 'Price book import failed', 
+        error instanceof Error ? error : new Error(String(error)), 
+        { totalTime }
+      );
+      
+      return {
+        success: false,
+        error: {
+          message: error instanceof Error ? error.message : 'Unknown price book import error',
+          code: 'PRICE_BOOK_IMPORT_ERROR'
+        }
+      };
+    }
+  });
+
   logger.info('app', 'File IPC handlers registered');
 }

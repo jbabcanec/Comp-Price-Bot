@@ -12,6 +12,14 @@ interface OpenAIStatus {
   isChecking: boolean;
 }
 
+interface DashboardStats {
+  productsLoaded: number;
+  mappingsCreated: number;
+  filesProcessed: number;
+  matchSuccessRate: number;
+  loading: boolean;
+}
+
 export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   const [openAIStatus, setOpenAIStatus] = useState<OpenAIStatus>({
     hasKey: false,
@@ -19,8 +27,17 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     isChecking: true
   });
 
+  const [stats, setStats] = useState<DashboardStats>({
+    productsLoaded: 0,
+    mappingsCreated: 0,
+    filesProcessed: 0,
+    matchSuccessRate: 0,
+    loading: true
+  });
+
   useEffect(() => {
     checkOpenAIStatus();
+    loadDashboardStats();
   }, []);
 
   const checkOpenAIStatus = async () => {
@@ -55,6 +72,39 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     }
   };
 
+  const loadDashboardStats = async () => {
+    try {
+      setStats(prev => ({ ...prev, loading: true }));
+
+      // Use the SAME data source as History tab for consistency
+      const [productsResult, historyAnalytics] = await Promise.all([
+        window.electronAPI.database.products.findAll(),
+        window.electronAPI.history.getAnalytics()
+      ]);
+
+      // Products loaded from our price book (independent of processing history)
+      const productsLoaded = productsResult.success ? productsResult.data.length : 0;
+      
+      // Get analytics data (same as History tab)
+      const analytics = historyAnalytics.success ? historyAnalytics.data : {
+        totalProcessedFiles: 0,
+        totalProcessedItems: 0,
+        overallMatchRate: 0
+      };
+
+      setStats({
+        productsLoaded, // Our price book products
+        mappingsCreated: analytics.totalProcessedItems || 0, // Total competitor items processed
+        filesProcessed: analytics.totalProcessedFiles || 0, // Files processed via competitor analysis
+        matchSuccessRate: Math.round(analytics.overallMatchRate || 0), // Match success rate
+        loading: false
+      });
+    } catch (error) {
+      console.error('Failed to load dashboard stats:', error);
+      setStats(prev => ({ ...prev, loading: false }));
+    }
+  };
+
   const getOpenAIStatusClass = () => {
     if (openAIStatus.isChecking) return 'pending';
     if (!openAIStatus.hasKey) return 'pending';
@@ -83,19 +133,27 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           </div>
           <div className="stats-grid">
             <div className="stat-item">
-              <span className="stat-number">0</span>
+              <span className="stat-number">
+                {stats.loading ? '...' : stats.productsLoaded.toLocaleString()}
+              </span>
               <span className="stat-label">Products Loaded</span>
             </div>
             <div className="stat-item">
-              <span className="stat-number">0</span>
-              <span className="stat-label">Mappings Created</span>
+              <span className="stat-number">
+                {stats.loading ? '...' : stats.mappingsCreated.toLocaleString()}
+              </span>
+              <span className="stat-label">Competitor Items</span>
             </div>
             <div className="stat-item">
-              <span className="stat-number">0</span>
+              <span className="stat-number">
+                {stats.loading ? '...' : stats.filesProcessed.toLocaleString()}
+              </span>
               <span className="stat-label">Files Processed</span>
             </div>
             <div className="stat-item">
-              <span className="stat-number">0%</span>
+              <span className="stat-number">
+                {stats.loading ? '...' : `${stats.matchSuccessRate}%`}
+              </span>
               <span className="stat-label">Match Success Rate</span>
             </div>
           </div>

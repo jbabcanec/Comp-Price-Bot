@@ -18,6 +18,7 @@ export interface ElectronAPI {
     process: (filePath: string) => Promise<IpcResponse<any>>;
     scanDirectory: (directoryPath: string) => Promise<IpcResponse<any[]>>;
     processBatch: (filePaths: string[]) => Promise<IpcResponse<any[]>>;
+    importPriceBook: (filePaths: string[]) => Promise<IpcResponse<any[]>>;
     validateProducts: (extractedData: any[]) => Promise<IpcResponse<any>>;
   };
 
@@ -121,6 +122,7 @@ const electronAPI: ElectronAPI = {
     process: (filePath: string) => ipcRenderer.invoke('file:process', filePath),
     scanDirectory: (directoryPath: string) => ipcRenderer.invoke('file:scanDirectory', directoryPath),
     processBatch: (filePaths: string[]) => ipcRenderer.invoke('file:processBatch', filePaths),
+    importPriceBook: (filePaths: string[]) => ipcRenderer.invoke('file:importPriceBook', filePaths),
     validateProducts: (extractedData: any[]) => ipcRenderer.invoke('file:validateProducts', extractedData),
   },
 
